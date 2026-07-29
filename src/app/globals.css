@@ -1,0 +1,218 @@
+@import url("https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-vazir: "Vazirmatn", sans-serif;
+  --bg: #160a1c;
+  --bg-soft: #1e0f26;
+  --card: #251333;
+  --border: rgba(216, 180, 254, 0.14);
+  --text: #fdf2f6;
+  --muted: rgba(253, 242, 246, 0.62);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-vazir), Tahoma, sans-serif;
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(236, 72, 137, 0.08), transparent 45%),
+    radial-gradient(circle at 85% 20%, rgba(168, 85, 247, 0.07), transparent 40%);
+  min-height: 100vh;
+}
+
+/* ─── Reusable surfaces ─────────────────────────────────────── */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px -8px rgba(88, 28, 135, 0.25);
+}
+
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #ec4889, #a855f7);
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(236, 72, 137, 0.35);
+}
+
+/* ─── Buttons ────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.65rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.925rem;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-rose {
+  background: linear-gradient(135deg, #ec4889, #a855f7);
+  color: #fff;
+  box-shadow: 0 8px 24px -8px rgba(236, 72, 137, 0.45);
+}
+.btn-rose:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-outline:hover:not(:disabled) {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* ─── Inputs ─────────────────────────────────────────────────── */
+
+.input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.65rem 1rem;
+  color: var(--text);
+  font-size: 0.925rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.input::placeholder {
+  color: rgba(253, 242, 246, 0.35);
+}
+.input:focus {
+  outline: none;
+  border-color: #ec4889;
+  background: rgba(236, 72, 137, 0.06);
+}
+
+.label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+/* ─── Badges / chips ─────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+}
+
+/* ─── Sidebar links ──────────────────────────────────────────── */
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.75rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+.nav-link:hover {
+  color: var(--text);
+  background: rgba(168, 85, 247, 0.08);
+}
+.nav-link.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(236, 72, 137, 0.2), rgba(168, 85, 247, 0.2));
+  border: 1px solid rgba(236, 72, 137, 0.3);
+}
+
+/* ─── Utility ────────────────────────────────────────────────── */
+
+.text-gradient {
+  background: linear-gradient(135deg, #f9a8c7, #c084fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.3);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 72, 137, 0.5);
+}

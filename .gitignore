@@ -1,0 +1,34 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# env (keep .env.example, ignore real secrets)
+.env
+.env.local
+.env*.local
+
+# database (SQLite)
+/prisma/dev.db
+/prisma/dev.db-journal
+*.db
+*.db-journal
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# system
+.DS_Store
+*.pem
+.vscode/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

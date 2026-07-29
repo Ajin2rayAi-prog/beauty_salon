@@ -1,0 +1,366 @@
+// ============================================================================
+// Beauty Salon Platform — Prisma schema
+// Multi-tenant: Tenant (کارفرما) → Salon[] → Line/Provider/...
+//
+// DB provider: SQLite for local/dev (zero setup). For production multi-tenant
+// scale, change the datasource provider to "postgresql" and set a Postgres
+// DATABASE_URL — the schema below uses NO enums (SQLite-compatible) so it is
+// portable as-is. String fields carry allowed-value comments instead of enums.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Platform / Tenancy ─────────────────────────────────────────────────────
+
+// Tenant = کارفرما (owns one or more salons). Created by PLATFORM when issuing a license.
+model Tenant {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  createdAt DateTime  @default(now())
+
+  salons   Salon[]
+  users    User[]
+  licenses License[]
+}
+
+model Salon {
+  id          String   @id @default(cuid())
+  tenantId    String
+  slug        String   @unique // url: /s/{slug}
+  name        String
+  description String?
+  address     String?
+  phone       String?
+  city        String?
+  logoUrl     String?
+  coverUrl    String?
+  // SMS credit (toman) — consumed by automatic notifications
+  smsCredit   Int      @default(0)
+  // business hours (default window; per-provider schedule overrides)
+  openTime    String   @default("09:00")
+  closeTime   String   @default("21:00")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users        User[]
+  lines        Line[]
+  providers    Provider[]
+  customers    Customer[]
+  appointments Appointment[]
+  waitlist     Waitlist[]
+  notifications Notification[]
+  payments     Payment[]
+  smsLogs      SmsLog[]
+
+  @@index([tenantId])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String   // bcrypt hash
+  phone     String?
+  role      String   // PLATFORM | ADMIN | PROVIDER | CUSTOMER
+  avatar    String?
+  tenantId  String?  // null only for PLATFORM
+  salonId   String?  // home salon for ADMIN/PROVIDER (CUSTOMER uses Customer[])
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenant  Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  salon   Salon?   @relation(fields: [salonId], references: [id], onDelete: SetNull)
+  provider   Provider?
+  customers  Customer[]
+  notifications Notification[]
+}
+
+// ─── Domain ─────────────────────────────────────────────────────────────────
+
+// Line = لاین زیبایی (facial, manicure, makeup, hair color, lashes, brow, ...)
+model Line {
+  id           String   @id @default(cuid())
+  salonId      String
+  salon        Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  name         String
+  slug         String
+  icon         String?  // lucide icon name or emoji
+  description  String?
+  // Pricing model (set manually by ADMIN per line):
+  //   PERCENTAGE -> salon takes `commissionPercent`% of each service; provider keeps the rest
+  //   RENT       -> provider pays `rentAmount` toman/month for the chair/room; keeps all service revenue
+  pricingMode       String  @default("PERCENTAGE") // PERCENTAGE | RENT
+  rentAmount        Int     @default(0)  // toman/month, used when RENT
+  commissionPercent Float   @default(30) // % salon's share, used when PERCENTAGE (0-100)
+  active            Boolean @default(true)
+  order             Int     @default(0)
+  createdAt         DateTime @default(now())
+
+  providers    ProviderLine[]
+  services     Service[]
+  appointments Appointment[]
+  portfolios   ProviderPortfolio[]
+  waitlist     Waitlist[]
+
+  @@unique([salonId, slug])
+  @@index([salonId])
+}
+
+model Provider {
+  id        String   @id @default(cuid())
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug      String
+  title     String?  // e.g. "متخصص میکاپ"
+  bio       String?
+  photoUrl  String?
+  instagram String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  lines      ProviderLine[]
+  schedules  ProviderSchedule[]
+  portfolios ProviderPortfolio[]
+  appointments Appointment[]
+
+  @@unique([salonId, slug])
+  @@index([salonId])
+}
+
+// many-to-many: a provider can serve multiple lines
+model ProviderLine {
+  id         String   @id @default(cuid())
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  lineId     String
+  line       Line     @relation(fields: [lineId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, lineId])
+}
+
+// Portfolio = نمونه‌کار, attached to a specific line
+model ProviderPortfolio {
+  id         String   @id @default(cuid())
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  lineId     String?
+  line       Line?    @relation(fields: [lineId], references: [id], onDelete: SetNull)
+  imageUrl   String
+  caption    String?
+  createdAt  DateTime @default(now())
+
+  @@index([providerId])
+}
+
+// Weekly recurring working slots, set by the PROVIDER themselves.
+// dayOfWeek: 0=Saturday ... 6=Friday (Iranian week)
+model ProviderSchedule {
+  id         String   @id @default(cuid())
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int      // 0..6 (Sat..Fri)
+  startTime  String   // "09:00"
+  endTime    String   // "21:00"
+  isOff      Boolean  @default(false) // true = day off / vacation override
+
+  @@index([providerId, dayOfWeek])
+}
+
+// Service = a bookable item within a line (e.g. "میکاپ عروس")
+model Service {
+  id          String   @id @default(cuid())
+  lineId      String
+  line        Line     @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  name        String
+  durationMin Int      @default(60)
+  price       Int      @default(0) // toman
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  appointments Appointment[]
+
+  @@index([lineId])
+}
+
+// Customer = a salon-scoped customer record. A registered User may have
+// Customer rows in multiple salons. Walk-in/phone customers have userId null.
+model Customer {
+  id        String   @id @default(cuid())
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String
+  phone     String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  appointments Appointment[]
+
+  @@unique([salonId, phone])
+  @@index([salonId])
+}
+
+model Appointment {
+  id         String   @id @default(cuid())
+  salonId    String
+  salon      Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  lineId     String
+  line       Line     @relation(fields: [lineId], references: [id])
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id])
+  serviceId  String?
+  service    Service? @relation(fields: [serviceId], references: [id])
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  startAt    DateTime
+  endAt      DateTime
+  // PENDING | CONFIRMED | DONE | CANCELLED | NO_SHOW
+  status     String   @default("PENDING")
+  // IN_PERSON | ONLINE
+  payMethod  String   @default("IN_PERSON")
+  // UNPAID | PAID | DEPOSIT
+  payStatus  String   @default("UNPAID")
+  amount     Int      @default(0) // total toman
+  deposit    Int      @default(0) // prepaid toman
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  payment Payment?
+
+  @@index([salonId])
+  @@index([providerId, startAt])
+  @@index([status])
+  @@index([startAt])
+}
+
+// Waitlist = صف انتظار for auto-replacement when a slot opens
+model Waitlist {
+  id           String   @id @default(cuid())
+  salonId      String
+  salon        Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  lineId       String
+  line         Line     @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  providerId   String?
+  customerId   String?
+  name         String
+  phone        String
+  desiredDate  DateTime // the day the customer wants
+  // WAITING | OFFERED | CLAIMED | EXPIRED
+  status       String   @default("WAITING")
+  notifiedAt   DateTime?
+  claimToken   String?  @unique // used in the "claim" link sent to the customer
+  expiresAt    DateTime? // claim offer window
+  createdAt    DateTime @default(now())
+
+  @@index([salonId, lineId, status])
+}
+
+// ─── Payments ───────────────────────────────────────────────────────────────
+
+model PendingPayment {
+  id            String   @id @default(cuid())
+  salonId       String
+  authority     String   @unique
+  amount        Int
+  appointmentId String?
+  customerPhone String?
+  // PENDING | APPROVED | FAILED
+  status        String   @default("PENDING")
+  refId         String?
+  createdAt     DateTime @default(now())
+
+  @@index([salonId])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  salonId       String
+  salon         Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  appointmentId String?  @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  amount        Int      // toman captured
+  method        String   // IN_PERSON | ONLINE
+  status        String   @default("PAID") // PAID | REFUNDED
+  refId         String?
+  // settlement split computed at capture time
+  salonShare    Int      @default(0) // toman to salon
+  providerShare Int      @default(0) // toman to provider
+  createdAt     DateTime @default(now())
+
+  @@index([salonId])
+  @@index([createdAt])
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  salonId   String?
+  salon     Salon?   @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  userId    String?  // in-panel recipient (User)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      String   // APPOINTMENT | WAITLIST | REMINDER | SYSTEM | PAYMENT
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([salonId])
+}
+
+model SmsLog {
+  id        String   @id @default(cuid())
+  salonId   String?
+  salon     Salon?   @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  to        String
+  message   String
+  // SENT | FAILED | SKIPPED
+  status    String   @default("SKIPPED")
+  cost      Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([salonId])
+}
+
+// ─── Licensing (platform monetization) ──────────────────────────────────────
+
+model License {
+  id           String    @id @default(cuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  // STARTER | PRO | WHITELABEL  (also encodes billing: ONE_TIME/MONTHLY/YEARLY via plan meta)
+  plan         String    @default("PRO")
+  // ACTIVE | EXPIRED | SUSPENDED
+  status       String    @default("ACTIVE")
+  priceIrr     Int       @default(0) // toman — set manually, market pricing TBD
+  maxSalons    Int       @default(1)
+  maxLines     Int       @default(0) // 0 = unlimited
+  maxProviders Int       @default(0) // 0 = unlimited
+  whiteLabel   Boolean   @default(false) // custom logo/name/domain
+  startDate    DateTime  @default(now())
+  endDate      DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([tenantId])
+}
+
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
