@@ -29,7 +29,10 @@ export function roleHome(role: string): string {
 
 type SessionUser = {
   id: string;
+  name?: string | null;
+  email?: string | null;
   role: string;
+  avatar?: string | null;
   tenantId?: string | null;
   salonId?: string | null;
 };
@@ -40,7 +43,7 @@ type SessionUser = {
  */
 export async function requireRole(
   allowedRoles: Role[]
-): Promise<NonNullable<Awaited<ReturnType<typeof getServerSession>>>["user"]> {
+): Promise<SessionUser> {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login?from=" + encodeURIComponent(""));
 

@@ -16,7 +16,10 @@ export default async function SalonPage({ params }: { params: { salonSlug: strin
       lines: { where: { active: true }, orderBy: { order: "asc" } },
       providers: {
         where: { active: true },
-        include: { lines: { include: { line: true } } },
+        include: {
+          user: { select: { name: true } },
+          lines: { include: { line: true } },
+        },
       },
     },
   });

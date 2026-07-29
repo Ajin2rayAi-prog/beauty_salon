@@ -24,6 +24,7 @@ export default async function LinePage({
         include: {
           provider: {
             include: {
+              user: { select: { name: true } },
               portfolios: { orderBy: { createdAt: "desc" }, take: 4 },
             },
           },

@@ -139,7 +139,6 @@ export default async function Home() {
                 <img src={p.photoUrl ?? `https://picsum.photos/seed/${p.slug}/200/200`} alt={p.title ?? p.slug} className="h-full w-full object-cover" />
               </div>
               <h3 className="mt-4 text-lg font-bold">{p.title ?? "خدمت‌دهنده"}</h3>
-              <p className="mt-1 text-xs text-white/45">{p.user ? "" : ""}</p>
               <p className="mt-2 line-clamp-2 text-sm leading-6 text-white/55">{p.bio}</p>
               <div className="mt-4 flex flex-wrap justify-center gap-1.5">
                 {p.lines.map((pl) => (
