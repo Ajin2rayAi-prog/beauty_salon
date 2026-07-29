@@ -42,17 +42,20 @@ export function ScheduleClient({ providerId, initialSchedules }: { providerId: s
   }
 
   return (
-    <div className="card max-w-3xl p-6">
+    <div className="card animate-fade-up max-w-3xl p-6">
       <div className="space-y-3">
         {rows.map((r, i) => (
-          <div key={r.dayOfWeek} className={`flex flex-wrap items-center gap-3 rounded-xl border p-4 transition ${r.isOff ? "border-white/[0.04] bg-white/[0.01] opacity-60" : "border-white/[0.07] bg-white/[0.02]"}`}>
+          <div key={r.dayOfWeek} className={`flex flex-wrap items-center gap-3 rounded-2xl border p-4 transition ${r.isOff ? "border-white/[0.04] bg-white/[0.02] opacity-60" : "border-white/[0.07] bg-gradient-to-l from-white/[0.05] to-transparent hover:border-rose-400/30"}`}>
             <div className="flex w-28 items-center gap-2">
               <input
                 type="checkbox" id={`off-${i}`} checked={!r.isOff}
                 onChange={(e) => setRow(i, { isOff: !e.target.checked })}
                 className="h-4 w-4 accent-rose-500"
               />
-              <label htmlFor={`off-${i}`} className="cursor-pointer text-sm font-semibold">{DAY_LABELS[r.dayOfWeek]}</label>
+              <label htmlFor={`off-${i}`} className="flex cursor-pointer items-center gap-2 text-sm font-bold">
+                <span className={`h-2 w-2 rounded-full ${r.isOff ? "bg-white/20" : "bg-rose-gradient"}`} />
+                {DAY_LABELS[r.dayOfWeek]}
+              </label>
             </div>
             {!r.isOff ? (
               <div className="flex items-center gap-2" dir="ltr">
@@ -61,7 +64,7 @@ export function ScheduleClient({ providerId, initialSchedules }: { providerId: s
                 <input type="time" value={r.endTime} onChange={(e) => setRow(i, { endTime: e.target.value })} className="input w-28 py-1.5 text-sm" />
               </div>
             ) : (
-              <span className="text-xs text-white/35">روز تعطیل</span>
+              <span className="badge text-xs text-white/40">روز تعطیل</span>
             )}
           </div>
         ))}

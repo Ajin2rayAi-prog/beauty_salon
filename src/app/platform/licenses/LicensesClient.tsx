@@ -65,8 +65,8 @@ export function LicensesClient({ initialLicenses }: { initialLicenses: License[]
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {licenses.map((l) => (
-        <div key={l.id} className="card p-5">
+      {licenses.map((l, i) => (
+        <div key={l.id} className="card animate-fade-up p-5 transition duration-300 hover:-translate-y-1 hover:border-emerald-400/30" style={{ animationDelay: `${i * 0.06}s` }}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="flex items-center gap-2 font-bold"><BadgeCheck size={16} className="text-emerald-300" /> {l.tenant.name}</h3>

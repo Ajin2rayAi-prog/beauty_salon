@@ -56,27 +56,36 @@ export default async function AdminFinancePage() {
   const chartData = byLine.map((l) => ({ name: l.name, salon: l.salon, provider: l.provider }));
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-extrabold">گزارش مالی</h1>
-        <p className="mt-1 text-sm text-white/50">درآمد سالن، سهم خدمت‌دهنده‌ها و تفکیک هر لاین — {toJalali(now)}</p>
+    <div className="relative space-y-8">
+      <div className="blob -right-10 -top-16 h-60 w-60 bg-rose-500/20" />
+      <div className="blob left-1/4 -top-10 h-52 w-52 bg-plum-500/15" />
+
+      <div className="animate-fade-up">
+        <span className="eyebrow"><Wallet size={14} /> گزارش مالی</span>
+        <h1 className="mt-4 text-2xl font-black sm:text-3xl">
+          درآمد و <span className="text-gradient">تفکیک مالی</span>
+        </h1>
+        <p className="mt-2 text-sm text-white/55">درآمد سالن، سهم خدمت‌دهنده‌ها و تفکیک هر لاین — {toJalali(now)}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="گردش مالی کل" value={formatPrice(totalGross)} icon={Wallet} accent="rose" hint={`${payments.length} تراکنش`} />
         <StatCard label="سهم سالن (کل)" value={formatPrice(totalSalon)} icon={TrendingUp} accent="plum" hint="از خدمات درصدی" />
         <StatCard label="سهم خدمت‌دهنده‌ها" value={formatPrice(totalProvider)} icon={Users} accent="sky" />
-        <StatCard label="اجاره ماهانه لاین‌ها" value={formatPrice(rentIncome)} icon={Scissors} accent="amber" hint={`${rentLines.length} لاین اجاره‌ای`} />
+        <StatCard label="اجاره ماهانه لاین‌ها" value={formatPrice(rentIncome)} icon={Scissors} accent="gold" hint={`${rentLines.length} لاین اجاره‌ای`} />
       </div>
 
-      <div className="card p-6">
-        <h2 className="mb-4 font-extrabold">تفکیک درآمد به‌ازای هر لاین</h2>
-        <FinanceByLineChart data={chartData} />
+      <div className="card-glow relative overflow-hidden p-6 animate-fade-up delay-1">
+        <div className="blob -left-8 -bottom-10 h-40 w-40 bg-mint-500/15" />
+        <h2 className="relative mb-4 font-black">تفکیک درآمد به‌ازای هر لاین</h2>
+        <div className="relative">
+          <FinanceByLineChart data={chartData} />
+        </div>
       </div>
 
       {/* per-line table */}
-      <div className="card overflow-x-auto p-2 sm:p-4">
-        <h2 className="mb-3 px-2 pt-2 font-extrabold">گزارش مالی هر بخش (لاین)</h2>
+      <div className="card overflow-x-auto p-2 sm:p-4 animate-fade-up delay-2">
+        <h2 className="mb-3 px-2 pt-2 font-black">گزارش مالی هر بخش (لاین)</h2>
         <table className="w-full min-w-[700px] text-sm">
           <thead>
             <tr className="text-right text-xs text-white/40">
@@ -92,14 +101,14 @@ export default async function AdminFinancePage() {
           </thead>
           <tbody className="divide-y divide-white/[0.05]">
             {byLine.map((l) => (
-              <tr key={l.id} className="text-white/80">
+              <tr key={l.id} className="text-white/80 transition hover:bg-white/[0.03]">
                 <td className="p-3 font-medium">{l.name}</td>
                 <td className="p-3 text-white/50">{pricingModeLabel(l.pricingMode)}</td>
                 <td className="p-3 text-white/60">{formatNumber(l.count)}</td>
                 <td className="p-3 text-white/70">{formatPrice(l.gross)}</td>
                 <td className="p-3 text-sky-300">{formatPrice(l.provider)}</td>
                 <td className="p-3 text-plum-300">{formatPrice(l.salon)}</td>
-                <td className="p-3 text-amber-300">{l.rent ? formatPrice(l.rent) : "—"}</td>
+                <td className="p-3 text-gold-300">{l.rent ? formatPrice(l.rent) : "—"}</td>
                 <td className="p-3 font-bold text-rose-300">{formatPrice(l.totalSalon)}</td>
               </tr>
             ))}
@@ -108,8 +117,8 @@ export default async function AdminFinancePage() {
       </div>
 
       {/* per-provider table */}
-      <div className="card overflow-x-auto p-2 sm:p-4">
-        <h2 className="mb-3 px-2 pt-2 font-extrabold">گزارش مالی هر خدمت‌دهنده</h2>
+      <div className="card overflow-x-auto p-2 sm:p-4 animate-fade-up delay-3">
+        <h2 className="mb-3 px-2 pt-2 font-black">گزارش مالی هر خدمت‌دهنده</h2>
         <table className="w-full min-w-[600px] text-sm">
           <thead>
             <tr className="text-right text-xs text-white/40">
@@ -122,7 +131,7 @@ export default async function AdminFinancePage() {
           </thead>
           <tbody className="divide-y divide-white/[0.05]">
             {byProvider.map((p) => (
-              <tr key={p.id} className="text-white/80">
+              <tr key={p.id} className="text-white/80 transition hover:bg-white/[0.03]">
                 <td className="p-3 font-medium">{p.title}</td>
                 <td className="p-3 text-white/60">{formatNumber(p.count)}</td>
                 <td className="p-3 text-white/70">{formatPrice(p.gross)}</td>

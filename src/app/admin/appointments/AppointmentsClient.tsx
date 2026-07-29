@@ -67,8 +67,8 @@ export function AppointmentsClient({
   return (
     <div className="space-y-4">
       {/* filters */}
-      <div className="card flex flex-wrap items-end gap-3 p-4">
-        <div className="flex items-center gap-2 text-sm text-white/50"><Filter size={16} /> فیلتر</div>
+      <div className="card flex flex-wrap items-end gap-3 p-4 animate-fade-up">
+        <div className="flex items-center gap-2 text-sm font-semibold text-white/60"><Filter size={16} className="text-rose-300" /> فیلتر</div>
         <select value={filter.status} onChange={(e) => setFilter({ ...filter, status: e.target.value })} className="input w-auto py-2 text-sm">
           {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
@@ -84,7 +84,7 @@ export function AppointmentsClient({
       </div>
 
       {/* table */}
-      <div className="card overflow-x-auto p-2 sm:p-4">
+      <div className="card overflow-x-auto p-2 sm:p-4 animate-fade-up delay-1">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="text-right text-xs text-white/40">
@@ -100,7 +100,7 @@ export function AppointmentsClient({
           </thead>
           <tbody className="divide-y divide-white/[0.05]">
             {appts.map((a) => (
-              <tr key={a.id} className="text-white/80">
+              <tr key={a.id} className="text-white/80 transition hover:bg-white/[0.03]">
                 <td className="p-3">
                   <div className="font-medium">{a.customer.name}</div>
                   <div className="text-[11px] text-white/40" dir="ltr">{a.customer.phone}</div>

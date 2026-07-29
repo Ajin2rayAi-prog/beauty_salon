@@ -60,7 +60,7 @@ export function TenantsClient({ initialTenants }: { initialTenants: Tenant[] }) 
       </button>
 
       {showForm && (
-        <form onSubmit={createTenant} className="card space-y-5 p-5">
+        <form onSubmit={createTenant} className="card-glow animate-fade-up space-y-5 p-6">
           <div>
             <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-rose-300"><Building2 size={15} /> اطلاعات کارفرما</h3>
             <div className="grid gap-4 sm:grid-cols-3">
@@ -135,8 +135,8 @@ function TenantList({ tenants }: { tenants: Tenant[] }) {
   }
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {tenants.map((t) => (
-        <div key={t.id} className="card p-5">
+      {tenants.map((t, i) => (
+        <div key={t.id} className="card animate-fade-up p-5 transition duration-300 hover:-translate-y-1 hover:border-rose-400/30" style={{ animationDelay: `${i * 0.06}s` }}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="flex items-center gap-2 font-bold"><Building2 size={16} className="text-rose-300" /> {t.name}</h3>

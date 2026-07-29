@@ -1,6 +1,7 @@
 import { requireRole, ROLES } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { LinesClient } from "./LinesClient";
+import { Scissors } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +19,14 @@ export default async function AdminLinesPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold">لاین‌ها و خدمات</h1>
-        <p className="mt-1 text-sm text-white/50">
+    <div className="relative space-y-6">
+      <div className="blob -right-10 -top-16 h-56 w-56 bg-plum-500/18" />
+      <div className="animate-fade-up">
+        <span className="eyebrow"><Scissors size={14} /> لاین‌ها و خدمات</span>
+        <h1 className="mt-4 text-2xl font-black sm:text-3xl">
+          مدیریت <span className="text-gradient">لاین‌ها</span>
+        </h1>
+        <p className="mt-2 text-sm text-white/55">
           حالت قیمت‌گذاری (درصدی یا اجاره ثابت) برای هر لاین را اینجا تنظیم کنید.
         </p>
       </div>

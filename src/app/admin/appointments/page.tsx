@@ -1,6 +1,7 @@
 import { requireRole, ROLES } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { AppointmentsClient } from "./AppointmentsClient";
+import { CalendarClock } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +30,14 @@ export default async function AdminAppointmentsPage({
   ]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold">نوبت‌ها</h1>
-        <p className="mt-1 text-sm text-white/50">تأیید، لغو، انجام و ثبت پرداخت نوبت‌ها.</p>
+    <div className="relative space-y-6">
+      <div className="blob -right-10 -top-16 h-56 w-56 bg-sky-500/15" />
+      <div className="animate-fade-up">
+        <span className="eyebrow"><CalendarClock size={14} /> مدیریت نوبت‌ها</span>
+        <h1 className="mt-4 text-2xl font-black sm:text-3xl">
+          نوبت‌های <span className="text-gradient">سالن</span>
+        </h1>
+        <p className="mt-2 text-sm text-white/55">تأیید، لغو، انجام و ثبت پرداخت نوبت‌ها.</p>
       </div>
       <AppointmentsClient
         initialAppointments={JSON.parse(JSON.stringify(appointments))}

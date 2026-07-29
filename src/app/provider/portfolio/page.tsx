@@ -17,9 +17,13 @@ export default async function ProviderPortfolioPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold">نمونه‌کارهای من</h1>
-        <p className="mt-1 text-sm text-white/50">نمونه‌کارها را به‌تفکیک هر لاین آپلود و مدیریت کنید؛ در پروفایل عمومی شما نمایش داده می‌شود.</p>
+      <div className="relative overflow-hidden">
+        <div className="blob -right-8 -top-12 h-48 w-48 bg-coral-500/20" />
+        <div className="relative animate-fade-up">
+          <span className="eyebrow">📸 گالری کارها</span>
+          <h1 className="mt-4 text-2xl font-black sm:text-3xl">نمونه‌کارهای <span className="text-gradient">من</span></h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">نمونه‌کارها را به‌تفکیک هر لاین آپلود و مدیریت کنید؛ در پروفایل عمومی شما نمایش داده می‌شود.</p>
+        </div>
       </div>
       <PortfolioClient
         providerId={provider.id}

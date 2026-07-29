@@ -4,7 +4,7 @@ import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/Badge";
 import { formatPrice, formatShortDate, formatTime, getRoleLabel } from "@/lib/utils";
 import Link from "next/link";
-import { Wallet, CalendarCheck, Users, Scissors, Clock, TrendingUp, ArrowLeft } from "lucide-react";
+import { Wallet, CalendarCheck, Users, Scissors, Clock, TrendingUp, ArrowLeft, Sparkles } from "lucide-react";
 import { AdminDashboardChart } from "./AdminDashboardChart";
 
 export const dynamic = "force-dynamic";
@@ -60,10 +60,16 @@ export default async function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-extrabold">داشبورد مدیریت</h1>
-        <p className="mt-1 text-sm text-white/50">{salon?.name}</p>
+    <div className="relative space-y-8">
+      <div className="blob -right-10 -top-16 h-64 w-64 bg-rose-500/20" />
+      <div className="blob left-1/3 -top-10 h-56 w-56 bg-plum-500/15" />
+
+      <div className="animate-fade-up">
+        <span className="eyebrow"><Sparkles size={14} /> پنل مدیریت</span>
+        <h1 className="mt-4 text-2xl font-black sm:text-3xl">
+          داشبورد <span className="text-gradient">مدیریت</span>
+        </h1>
+        <p className="mt-2 text-sm text-white/55">{salon?.name} — نمای کلی درآمد، نوبت‌ها و عملکرد سالن.</p>
       </div>
 
       {/* Financial stat cards */}
@@ -83,30 +89,33 @@ export default async function AdminDashboardPage() {
           hint={`${paymentsMonth._count} تراکنش`}
         />
         <StatCard label="نوبت‌های امروز" value={String(apptsToday)} icon={CalendarCheck} accent="sky" hint="امروز" />
-        <StatCard label="نوبت‌های این ماه" value={String(monthAppts)} icon={Clock} accent="amber" hint="جاری" />
+        <StatCard label="نوبت‌های این ماه" value={String(monthAppts)} icon={Clock} accent="coral" hint="جاری" />
       </div>
 
       {/* Secondary stats */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="لاین‌های فعال" value={String(lines)} icon={Scissors} accent="rose" />
-        <StatCard label="خدمت‌دهنده‌های فعال" value={String(providers)} icon={Users} accent="plum" />
+        <StatCard label="لاین‌های فعال" value={String(lines)} icon={Scissors} accent="mint" />
+        <StatCard label="خدمت‌دهنده‌های فعال" value={String(providers)} icon={Users} accent="gold" />
         <StatCard label="اعتبار پیامک" value={formatPrice(salon?.smsCredit ?? 0)} icon={Wallet} accent="amber" hint="تومان" />
       </div>
 
       {/* Revenue chart */}
-      <div className="card p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-extrabold">درآمد ۷ روز اخیر</h2>
-          <Link href="/admin/finance" className="inline-flex items-center gap-1 text-xs text-rose-300 hover:underline">
+      <div className="card-glow relative overflow-hidden p-6 animate-fade-up delay-2">
+        <div className="blob -left-8 -bottom-10 h-40 w-40 bg-sky-500/15" />
+        <div className="relative mb-4 flex items-center justify-between">
+          <h2 className="font-black">درآمد ۷ روز اخیر</h2>
+          <Link href="/admin/finance" className="inline-flex items-center gap-1 text-xs font-bold text-rose-300 hover:underline">
             گزارش کامل <ArrowLeft size={13} />
           </Link>
         </div>
-        <AdminDashboardChart data={series} />
+        <div className="relative">
+          <AdminDashboardChart data={series} />
+        </div>
       </div>
 
       {/* Recent appointments */}
-      <div className="card p-6">
-        <h2 className="mb-4 font-extrabold">آخرین نوبت‌ها</h2>
+      <div className="card relative overflow-hidden p-6 animate-fade-up delay-3">
+        <h2 className="mb-4 font-black">آخرین نوبت‌ها</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -121,8 +130,8 @@ export default async function AdminDashboardPage() {
             </thead>
             <tbody className="divide-y divide-white/[0.05]">
               {recentAppts.map((a) => (
-                <tr key={a.id} className="text-white/80">
-                  <td className="py-3">{a.customer.name}</td>
+                <tr key={a.id} className="text-white/80 transition hover:bg-white/[0.03]">
+                  <td className="py-3 font-medium">{a.customer.name}</td>
                   <td className="py-3 text-white/60">{a.service?.name ?? a.line.name}</td>
                   <td className="py-3 text-white/60">{a.provider.title}</td>
                   <td className="py-3 text-white/60">{formatShortDate(a.startAt)} • {formatTime(a.startAt)}</td>

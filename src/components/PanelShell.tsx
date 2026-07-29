@@ -3,16 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { LucideIcon, LogOut, Menu, X } from "lucide-react";
+import {
+  LucideIcon, LogOut, Menu, X,
+  LayoutDashboard, Scissors, Users, CalendarClock, Wallet, Bell, Settings,
+  CalendarDays, Clock, Camera, CalendarHeart, Building2, BadgeCheck,
+} from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Wordmark } from "./Logo";
 import NotificationBell from "./NotificationBell";
+import { ThemeToggle } from "./ThemeToggle";
+
+// Icon registry — server components cannot pass function/component props to
+// client components, so layouts pass an icon *name* and we resolve it here.
+export const PANEL_ICONS = {
+  LayoutDashboard, Scissors, Users, CalendarClock, Wallet, Bell, Settings,
+  CalendarDays, Clock, Camera, CalendarHeart, Building2, BadgeCheck,
+} satisfies Record<string, LucideIcon>;
+
+export type PanelIconName = keyof typeof PANEL_ICONS;
 
 export type NavItem = {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: PanelIconName;
 };
 
 export function PanelShell({
@@ -33,6 +47,7 @@ export function PanelShell({
     <nav className="flex flex-col gap-1">
       {items.map((it) => {
         const active = pathname === it.href || (it.href !== "/" && pathname.startsWith(it.href + "/"));
+        const Icon = PANEL_ICONS[it.icon];
         return (
           <Link
             key={it.href}
@@ -40,7 +55,7 @@ export function PanelShell({
             onClick={() => setOpen(false)}
             className={cn("nav-link", active && "active")}
           >
-            <it.icon size={18} />
+            <Icon size={18} />
             <span>{it.label}</span>
           </Link>
         );
@@ -51,7 +66,7 @@ export function PanelShell({
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-l border-white/[0.06] bg-[#1a0b20]/80 p-5 backdrop-blur lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-l border-white/[0.06] bg-[#150b1f]/80 p-5 backdrop-blur-xl lg:flex">
         <Link href="/" className="mb-1 block"><Wordmark /></Link>
         <p className="mb-6 text-[11px] text-white/40">{roleLabel}</p>
         <div className="flex-1 overflow-y-auto">{nav}</div>
@@ -60,18 +75,21 @@ export function PanelShell({
 
       {/* Mobile topbar + drawer */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#160a1c]/85 px-4 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#0f0716]/85 px-4 py-3 backdrop-blur-xl lg:hidden">
           <button onClick={() => setOpen(true)} className="btn-ghost p-2" aria-label="منو">
             <Menu size={20} />
           </button>
           <Wordmark />
-          <NotificationBell />
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <NotificationBell />
+          </div>
         </header>
 
         {open && (
           <div className="fixed inset-0 z-40 lg:hidden">
             <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-            <div className="absolute right-0 top-0 flex h-full w-72 flex-col border-l border-white/10 bg-[#1a0b20] p-5">
+            <div className="absolute right-0 top-0 flex h-full w-72 flex-col border-l border-white/10 bg-[#150b1f] p-5">
               <div className="mb-6 flex items-center justify-between">
                 <Wordmark />
                 <button onClick={() => setOpen(false)} className="btn-ghost p-2" aria-label="بستن">
@@ -85,7 +103,8 @@ export function PanelShell({
         )}
 
         {/* Desktop topbar */}
-        <header className="sticky top-0 z-20 hidden items-center justify-end gap-3 border-b border-white/[0.06] bg-[#160a1c]/70 px-8 py-3 backdrop-blur lg:flex">
+        <header className="sticky top-0 z-20 hidden items-center justify-end gap-2 border-b border-white/[0.06] bg-[#0f0716]/70 px-8 py-3 backdrop-blur-xl lg:flex">
+          <ThemeToggle />
           <NotificationBell />
         </header>
 

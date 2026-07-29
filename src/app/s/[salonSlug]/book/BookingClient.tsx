@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatPrice, formatNumber, toJalali } from "@/lib/utils";
-import { Scissors, Users, CalendarDays, Clock, CreditCard, Store, Check, Loader2, ChevronLeft, Sparkles } from "lucide-react";
+import { Scissors, Users, CalendarDays, Clock, CreditCard, Store, Check, Loader2, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 
 type Service = { id: string; name: string; durationMin: number; price: number };
@@ -62,8 +62,21 @@ export function BookingClient({
   const lineProviders = providers.filter((p) => !lineId || p.lines.some((pl) => pl.lineId === lineId));
   const provider = providers.find((p) => p.id === providerId);
 
-  // step gating
-  const step = !lineId ? 0 : !serviceId ? 1 : !providerId ? 2 : !(date && time) ? 3 : 4;
+  // wizard: user walks one step at a time (no long scroll)
+  const [current, setCurrent] = useState(0);
+  const stepValid = [!!lineId, !!serviceId, !!providerId, !!(date && time), true];
+  const canNext = stepValid[current];
+
+  function goNext() {
+    if (canNext && current < STEPS.length - 1) setCurrent((c) => c + 1);
+  }
+  function goBack() {
+    if (current > 0) setCurrent((c) => c - 1);
+  }
+  // allow jumping back to an already-visited step via the stepper
+  function goTo(i: number) {
+    if (i <= current) setCurrent(i);
+  }
 
   // reset downstream when upstream changes
   useEffect(() => { setServiceId(""); setProviderId(""); setDate(""); setTime(""); }, [lineId]);
@@ -122,33 +135,43 @@ export function BookingClient({
         {/* stepper */}
         <div className="card flex flex-wrap gap-2 p-4">
           {STEPS.map((s, i) => (
-            <div key={s} className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${i <= step ? "bg-rose-gradient text-white" : "bg-white/[0.05] text-white/40"}`}>
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-white/20 text-[10px]">{formatNumber(i + 1)}</span>
+            <button
+              key={s}
+              type="button"
+              onClick={() => goTo(i)}
+              disabled={i > current}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${i === current ? "bg-rose-gradient text-white" : i < current ? "bg-rose-500/15 text-rose-200 hover:bg-rose-500/25" : "bg-white/[0.05] text-white/40"} ${i <= current ? "cursor-pointer" : "cursor-not-allowed"}`}
+            >
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-white/20 text-[10px]">
+                {i < current ? <Check size={11} /> : formatNumber(i + 1)}
+              </span>
               {s}
-            </div>
+            </button>
           ))}
         </div>
 
         {/* Step 0: line */}
+        {current === 0 && (
         <Section icon={<Scissors size={18} />} title="۱. انتخاب لاین" done={!!lineId}>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {lines.map((l) => (
               <button key={l.id} onClick={() => setLineId(l.id)}
-                className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition ${lineId === l.id ? "border-rose-400/50 bg-rose-400/10" : "border-white/[0.08] hover:border-white/20"}`}>
+                className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition ${lineId === l.id ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08] hover:border-white/20"}`}>
                 <span className="text-2xl">{lineIcons[l.icon ?? ""] ?? "💫"}</span>
                 <span className="text-sm font-semibold">{l.name}</span>
               </button>
             ))}
           </div>
         </Section>
+        )}
 
         {/* Step 1: service */}
-        {lineId && (
+        {current === 1 && (
           <Section icon={<Sparkles size={18} />} title="۲. انتخاب خدمت" done={!!serviceId}>
             <div className="grid gap-2.5">
               {line?.services.map((s) => (
                 <button key={s.id} onClick={() => setServiceId(s.id)}
-                  className={`flex items-center justify-between rounded-xl border p-4 text-right transition ${serviceId === s.id ? "border-rose-400/50 bg-rose-400/10" : "border-white/[0.08] hover:border-white/20"}`}>
+                  className={`flex items-center justify-between rounded-2xl border p-4 text-right transition ${serviceId === s.id ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08] hover:border-white/20"}`}>
                   <span>
                     <span className="font-semibold">{s.name}</span>
                     <span className="mt-0.5 block text-xs text-white/45">{formatNumber(s.durationMin)} دقیقه</span>
@@ -161,12 +184,12 @@ export function BookingClient({
         )}
 
         {/* Step 2: provider */}
-        {serviceId && (
+        {current === 2 && (
           <Section icon={<Users size={18} />} title="۳. انتخاب خدمت‌دهنده" done={!!providerId}>
             <div className="grid gap-2.5 sm:grid-cols-2">
               {lineProviders.map((p) => (
                 <button key={p.id} onClick={() => setProviderId(p.id)}
-                  className={`flex items-center gap-3 rounded-xl border p-4 text-right transition ${providerId === p.id ? "border-rose-400/50 bg-rose-400/10" : "border-white/[0.08] hover:border-white/20"}`}>
+                  className={`flex items-center gap-3 rounded-2xl border p-4 text-right transition ${providerId === p.id ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08] hover:border-white/20"}`}>
                   <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={p.photoUrl ?? `https://picsum.photos/seed/${p.slug}/120/120`} alt={p.title ?? ""} className="h-full w-full object-cover" />
@@ -183,13 +206,13 @@ export function BookingClient({
         )}
 
         {/* Step 3: date & time */}
-        {providerId && (
+        {current === 3 && (
           <Section icon={<CalendarDays size={18} />} title="۴. انتخاب روز و ساعت" done={!!(date && time)}>
             <div className="space-y-4">
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {days.map((d) => (
                   <button key={d.date} onClick={() => setDate(d.date)}
-                    className={`flex w-16 shrink-0 flex-col items-center rounded-xl border py-2.5 transition ${date === d.date ? "border-rose-400/50 bg-rose-400/10" : "border-white/[0.08] hover:border-white/20"}`}>
+                    className={`flex w-16 shrink-0 flex-col items-center rounded-xl border py-2.5 transition ${date === d.date ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08] hover:border-white/20"}`}>
                     <span className="text-[11px] text-white/50">{d.weekday}</span>
                     <span className="mt-0.5 font-bold">{d.label}</span>
                   </button>
@@ -220,7 +243,7 @@ export function BookingClient({
         )}
 
         {/* Step 4: info & payment */}
-        {date && time && (
+        {current === 4 && (
           <Section icon={<CreditCard size={18} />} title="۵. اطلاعات و پرداخت">
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -233,12 +256,12 @@ export function BookingClient({
                 <label className="label">روش پرداخت</label>
                 <div className="mt-2 grid gap-2.5 sm:grid-cols-2">
                   <button onClick={() => setPayMethod("IN_PERSON")}
-                    className={`flex items-center gap-3 rounded-xl border p-4 text-right transition ${payMethod === "IN_PERSON" ? "border-rose-400/50 bg-rose-400/10" : "border-white/[0.08]"}`}>
+                    className={`flex items-center gap-3 rounded-2xl border p-4 text-right transition ${payMethod === "IN_PERSON" ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08]"}`}>
                     <Store size={20} className="text-amber-300" />
                     <span><span className="block font-semibold">حضوری در سالن</span><span className="block text-xs text-white/45">هنگام مراجعه پرداخت کنید</span></span>
                   </button>
                   <button onClick={() => setPayMethod("ONLINE")}
-                    className={`flex items-center gap-3 rounded-xl border p-4 text-right transition ${payMethod === "ONLINE" ? "border-rose-400/50 bg-rose-400/10" : "border-white/[0.08]"}`}>
+                    className={`flex items-center gap-3 rounded-2xl border p-4 text-right transition ${payMethod === "ONLINE" ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08]"}`}>
                     <CreditCard size={20} className="text-sky-300" />
                     <span><span className="block font-semibold">آنلاین (بیعانه)</span><span className="block text-xs text-white/45">{formatPrice(deposit)} بیعانه — باقی در سالن</span></span>
                   </button>
@@ -252,12 +275,37 @@ export function BookingClient({
             </div>
           </Section>
         )}
+
+        {/* wizard navigation */}
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={goBack}
+            disabled={current === 0}
+            className="btn-outline px-5 py-2.5 text-sm disabled:opacity-40"
+          >
+            <ChevronRight size={16} /> مرحله قبل
+          </button>
+
+          {current < STEPS.length - 1 ? (
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={!canNext}
+              className="btn-rose px-6 py-2.5 text-sm"
+            >
+              مرحله بعد <ChevronLeft size={16} />
+            </button>
+          ) : (
+            <span className="text-xs text-white/45">برای نهایی‌کردن، دکمه‌ی ثبت را بزنید</span>
+          )}
+        </div>
       </div>
 
       {/* summary sidebar */}
       <aside className="lg:sticky lg:top-24 lg:self-start">
-        <div className="card p-5">
-          <h3 className="font-extrabold">خلاصه رزرو</h3>
+        <div className="card-glow p-6">
+          <h3 className="flex items-center gap-2 text-lg font-black"><Sparkles size={16} className="text-rose-300" /> خلاصه رزرو</h3>
           <div className="mt-4 space-y-3 text-sm">
             <Row label="لاین" value={line?.name} />
             <Row label="خدمت" value={service?.name} />
@@ -285,11 +333,11 @@ export function BookingClient({
 
 function Section({ icon, title, done, children }: { icon: React.ReactNode; title: string; done?: boolean; children: React.ReactNode }) {
   return (
-    <div className="card p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="text-rose-300">{icon}</span>
-        <h2 className="font-bold">{title}</h2>
-        {done && <Check size={16} className="mr-auto text-emerald-400" />}
+    <div className="card p-6 animate-fade-up">
+      <div className="mb-4 flex items-center gap-2.5">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-rose-500/15 text-rose-300">{icon}</span>
+        <h2 className="text-lg font-black">{title}</h2>
+        {done && <span className="mr-auto grid h-6 w-6 place-items-center rounded-full bg-emerald-500/20 text-emerald-300"><Check size={14} /></span>}
       </div>
       {children}
     </div>

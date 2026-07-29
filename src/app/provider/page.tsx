@@ -36,10 +36,15 @@ export default async function ProviderDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-extrabold">سلام، {provider.title}</h1>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {provider.lines.map((pl) => <span key={pl.lineId} className="badge text-xs">{pl.line.name}</span>)}
+      <div className="relative overflow-hidden">
+        <div className="blob -right-10 -top-16 h-56 w-56 bg-rose-500/20" />
+        <div className="blob delay-3 left-10 -top-10 h-40 w-40 bg-plum-500/20" />
+        <div className="relative animate-fade-up">
+          <span className="eyebrow">✨ پنل خدمت‌دهنده</span>
+          <h1 className="mt-4 text-2xl font-black sm:text-3xl">سلام، <span className="text-gradient">{provider.title}</span> 👋</h1>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {provider.lines.map((pl) => <span key={pl.lineId} className="badge text-xs text-rose-200">{pl.line.name}</span>)}
+          </div>
         </div>
       </div>
 
@@ -50,23 +55,29 @@ export default async function ProviderDashboardPage() {
         <StatCard label="نمونه‌کار" value={String(portfolioCount)} icon={Camera} accent="amber" />
       </div>
 
-      <div className="card p-6">
+      <div className="card animate-fade-up delay-2 p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-extrabold">نوبت‌های امروز</h2>
-          <Link href="/provider/calendar" className="text-xs text-rose-300 hover:underline">تقویم کامل ←</Link>
+          <h2 className="text-lg font-black">نوبت‌های امروز</h2>
+          <Link href="/provider/calendar" className="text-xs font-semibold text-rose-300 hover:underline">تقویم کامل ←</Link>
         </div>
         {todayList.length === 0 ? (
-          <p className="py-8 text-center text-white/40">امروز نوبتی ندارید.</p>
+          <div className="py-10 text-center">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-rose-500/10 text-rose-300"><CalendarCheck size={24} /></div>
+            <p className="mt-3 text-white/45">امروز نوبتی ندارید.</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {todayList.map((a) => (
-              <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
-                <div>
-                  <p className="font-semibold">{a.customer.name}</p>
-                  <p className="mt-0.5 text-xs text-white/45">{a.service?.name ?? a.line.name} • {a.line.name}</p>
+            {todayList.map((a, i) => (
+              <div key={a.id} className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 transition hover:border-rose-400/30 hover:bg-white/[0.04] animate-fade-up" style={{ animationDelay: `${i * 0.05}s` }}>
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-gradient text-sm font-black text-white shadow-lg">{a.customer.name.charAt(0)}</span>
+                  <div>
+                    <p className="font-bold">{a.customer.name}</p>
+                    <p className="mt-0.5 text-xs text-white/45">{a.service?.name ?? a.line.name} • {a.line.name}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold text-rose-300">{formatTime(a.startAt)}</span>
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full bg-white/[0.04] px-3 py-1 text-sm font-bold text-rose-300">{formatTime(a.startAt)}</span>
                   <StatusBadge status={a.status} />
                   <StatusBadge status={a.payStatus} />
                 </div>

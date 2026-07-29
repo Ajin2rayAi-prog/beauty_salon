@@ -12,7 +12,7 @@ export function StatCard({
   value: string;
   icon: LucideIcon;
   hint?: string;
-  accent?: "rose" | "plum" | "emerald" | "amber" | "sky";
+  accent?: "rose" | "plum" | "emerald" | "amber" | "sky" | "coral" | "mint" | "gold";
 }) {
   const iconBg: Record<string, string> = {
     rose: "bg-rose-500/15 text-rose-300",
@@ -20,6 +20,9 @@ export function StatCard({
     emerald: "bg-emerald-500/15 text-emerald-300",
     amber: "bg-amber-500/15 text-amber-300",
     sky: "bg-sky-500/15 text-sky-300",
+    coral: "bg-coral-500/15 text-coral-300",
+    mint: "bg-mint-500/15 text-mint-300",
+    gold: "bg-gold-400/15 text-gold-300",
   };
   return (
     <div className="stat-card animate-fade-up">

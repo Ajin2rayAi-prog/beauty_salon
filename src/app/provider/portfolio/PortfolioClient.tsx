@@ -58,7 +58,7 @@ export function PortfolioClient({ providerId, lines, initialItems }: { providerI
       </button>
 
       {showForm && (
-        <form onSubmit={add} className="card space-y-4 p-5">
+        <form onSubmit={add} className="card animate-fade-up space-y-4 p-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2"><label className="label">لینک تصویر</label><input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} className="input mt-1.5" dir="ltr" placeholder="https://..." /></div>
             <div><label className="label">لاین</label>
@@ -77,26 +77,33 @@ export function PortfolioClient({ providerId, lines, initialItems }: { providerI
 
       {items.length === 0 ? (
         <div className="card p-12 text-center text-white/45">
-          <Camera size={32} className="mx-auto text-white/25" />
-          <p className="mt-3">هنوز نمونه‌کاری اضافه نکرده‌اید.</p>
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-coral-500/10 text-coral-300"><Camera size={30} /></div>
+          <p className="mt-4">هنوز نمونه‌کاری اضافه نکرده‌اید.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {items.map((it) => (
-            <figure key={it.id} className="card group relative overflow-hidden">
+          {items.map((it, i) => (
+            <figure key={it.id} className="group relative animate-fade-up overflow-hidden rounded-2xl border border-white/[0.06] shadow-lg" style={{ animationDelay: `${i * 0.05}s` }}>
               <div className="aspect-[3/4] overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={it.imageUrl} alt={it.caption ?? ""} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                <img src={it.imageUrl} alt={it.caption ?? ""} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
               </div>
-              <figcaption className="flex items-center justify-between gap-2 p-2.5">
-                <span className="min-w-0">
-                  {it.line && <span className="badge block w-fit text-[10px]">{it.line.name}</span>}
-                  {it.caption && <span className="mt-1 block truncate text-[11px] text-white/50">{it.caption}</span>}
-                </span>
-                <button onClick={() => remove(it.id)} disabled={deleting === it.id} className="btn-ghost shrink-0 p-1.5 text-red-400 hover:bg-red-400/10">
-                  {deleting === it.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                </button>
+              {/* gradient overlay */}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
+              {/* caption overlay on hover */}
+              <figcaption className="absolute inset-x-0 bottom-0 flex translate-y-2 flex-col gap-1 p-3 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                {it.line && <span className="badge w-fit text-[10px] text-rose-100">{it.line.name}</span>}
+                {it.caption && <span className="truncate text-[11px] text-white/85">{it.caption}</span>}
               </figcaption>
+              {/* delete button */}
+              <button
+                onClick={() => remove(it.id)}
+                disabled={deleting === it.id}
+                className="absolute left-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/50 text-red-300 opacity-0 backdrop-blur transition hover:bg-red-500/40 hover:text-white group-hover:opacity-100"
+                title="حذف"
+              >
+                {deleting === it.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              </button>
             </figure>
           ))}
         </div>

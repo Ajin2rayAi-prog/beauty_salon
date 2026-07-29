@@ -14,9 +14,13 @@ export default async function ProviderSchedulePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold">ساعات کاری من</h1>
-        <p className="mt-1 text-sm text-white/50">بازه کاری هر روز هفته را خودتان تنظیم کنید؛ نوبت‌ها فقط در همین بازه‌ها پیشنهاد می‌شوند.</p>
+      <div className="relative overflow-hidden">
+        <div className="blob -right-8 -top-12 h-48 w-48 bg-sky-500/20" />
+        <div className="relative animate-fade-up">
+          <span className="eyebrow">⏰ برنامه هفتگی</span>
+          <h1 className="mt-4 text-2xl font-black sm:text-3xl">ساعات کاری <span className="text-gradient">من</span></h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">بازه کاری هر روز هفته را خودتان تنظیم کنید؛ نوبت‌ها فقط در همین بازه‌ها پیشنهاد می‌شوند.</p>
+        </div>
       </div>
       <ScheduleClient providerId={provider.id} initialSchedules={JSON.parse(JSON.stringify(provider.schedules))} />
     </div>

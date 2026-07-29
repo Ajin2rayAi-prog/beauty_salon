@@ -38,8 +38,9 @@ export function SettingsClient({ salon }: { salon: Salon }) {
   }
 
   return (
-    <form onSubmit={save} className="card max-w-3xl space-y-5 p-6">
-      <div className="grid gap-5 sm:grid-cols-2">
+    <form onSubmit={save} className="card-glow relative max-w-3xl space-y-5 overflow-hidden p-6 animate-fade-up">
+      <div className="blob -left-10 -bottom-12 h-44 w-44 bg-plum-500/15" />
+      <div className="relative grid gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2"><label className="label">نام سالن</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input mt-1.5" /></div>
         <div className="sm:col-span-2"><label className="label">توضیح</label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input mt-1.5 min-h-24" /></div>
         <div className="sm:col-span-2"><label className="label">آدرس</label><input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="input mt-1.5" /></div>
@@ -50,7 +51,7 @@ export function SettingsClient({ salon }: { salon: Salon }) {
         <div><label className="label">لوگو (URL)</label><input value={form.logoUrl} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} className="input mt-1.5" dir="ltr" placeholder="https://..." /></div>
         <div><label className="label">کاور (URL)</label><input value={form.coverUrl} onChange={(e) => setForm({ ...form, coverUrl: e.target.value })} className="input mt-1.5" dir="ltr" placeholder="https://..." /></div>
       </div>
-      <button disabled={saving} className="btn-rose px-5 py-2.5 text-sm">
+      <button disabled={saving} className="btn-rose relative px-5 py-2.5 text-sm">
         {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} ذخیره تنظیمات
       </button>
     </form>

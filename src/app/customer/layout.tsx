@@ -1,6 +1,5 @@
 import { requireRole, ROLES } from "@/lib/auth-guards";
 import { PanelShell, NavItem } from "@/components/PanelShell";
-import { LayoutDashboard, CalendarHeart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -8,8 +7,8 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   const user = await requireRole([ROLES.CUSTOMER]);
 
   const items: NavItem[] = [
-    { href: "/customer", label: "نوبت‌های من", icon: CalendarHeart },
-    { href: "/", label: "رزرو جدید", icon: LayoutDashboard },
+    { href: "/customer", label: "نوبت‌های من", icon: "CalendarHeart" },
+    { href: "/", label: "رزرو جدید", icon: "LayoutDashboard" },
   ];
 
   return (

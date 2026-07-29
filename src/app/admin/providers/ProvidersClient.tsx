@@ -73,7 +73,7 @@ export function ProvidersClient({ initialProviders, lines }: { initialProviders:
       </button>
 
       {showForm && (
-        <form onSubmit={createProvider} className="card space-y-4 p-5">
+        <form onSubmit={createProvider} className="card space-y-4 p-5 animate-fade-up">
           <div className="grid gap-4 sm:grid-cols-2">
             <div><label className="label">نام کامل</label><input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input mt-1.5" /></div>
             <div><label className="label">ایمیل</label><input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input mt-1.5" dir="ltr" /></div>
@@ -101,8 +101,12 @@ export function ProvidersClient({ initialProviders, lines }: { initialProviders:
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {providers.map((p) => (
-          <div key={p.id} className="card flex flex-col p-5">
+        {providers.map((p, i) => (
+          <div
+            key={p.id}
+            className="card flex flex-col p-5 animate-fade-up transition duration-300 hover:-translate-y-1 hover:border-rose-400/25"
+            style={{ animationDelay: `${i * 0.06}s` }}
+          >
             <div className="flex items-center gap-3">
               <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 border-rose-400/30">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

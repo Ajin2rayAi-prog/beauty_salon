@@ -63,18 +63,22 @@ export function LinesClient({ initialLines }: { initialLines: Line[] }) {
 
   return (
     <div className="space-y-4">
-      {lines.map((line) => {
+      {lines.map((line, i) => {
         const e = editOf(line);
         const dirty = !!edits[line.id];
         const open = !!expanded[line.id];
         return (
-          <div key={line.id} className="card overflow-hidden">
+          <div
+            key={line.id}
+            className="card overflow-hidden animate-fade-up transition hover:border-rose-400/25"
+            style={{ animationDelay: `${i * 0.06}s` }}
+          >
             {/* header row */}
             <button
               onClick={() => setExpanded((x) => ({ ...x, [line.id]: !open }))}
               className="flex w-full flex-wrap items-center gap-4 p-5 text-right"
             >
-              <div className="grid h-12 w-12 place-items-center rounded-xl bg-rose-gradient text-xl">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-gradient text-xl shadow-lg">
                 {lineIcons[line.icon ?? ""] ?? "💫"}
               </div>
               <div className="min-w-0 flex-1">

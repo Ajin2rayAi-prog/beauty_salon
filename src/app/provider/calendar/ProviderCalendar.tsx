@@ -11,11 +11,11 @@ type Appt = {
 
 const WD = ["شنبه", "یک‌شنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه"];
 const statusColor: Record<string, string> = {
-  PENDING: "border-amber-400/40 bg-amber-400/10",
-  CONFIRMED: "border-emerald-400/40 bg-emerald-400/10",
-  DONE: "border-sky-400/40 bg-sky-400/10",
-  CANCELLED: "border-red-400/30 bg-red-400/5 opacity-50",
-  NO_SHOW: "border-zinc-400/30 bg-zinc-400/5 opacity-50",
+  PENDING: "border-amber-400/40 bg-amber-400/15 text-amber-100 shadow-[0_4px_16px_-6px_rgba(251,191,36,0.6)]",
+  CONFIRMED: "border-emerald-400/40 bg-emerald-400/15 text-emerald-100 shadow-[0_4px_16px_-6px_rgba(52,211,153,0.6)]",
+  DONE: "border-sky-400/40 bg-sky-400/15 text-sky-100 shadow-[0_4px_16px_-6px_rgba(56,189,248,0.6)]",
+  CANCELLED: "border-red-400/30 bg-red-400/10 text-red-200 opacity-50",
+  NO_SHOW: "border-zinc-400/30 bg-zinc-400/10 text-zinc-300 opacity-50",
 };
 
 function startOfIranianWeek(d: Date) {
@@ -53,14 +53,14 @@ export function ProviderCalendar({ providerId }: { providerId: string }) {
   const fmtDay = (d: Date) => new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" }).format(d);
 
   return (
-    <div className="card overflow-hidden">
-      <div className="flex items-center justify-between border-b border-white/[0.06] p-4">
-        <button onClick={() => shift(-1)} className="btn-ghost p-2"><ChevronRight size={18} /></button>
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          {loading && <Loader2 size={15} className="animate-spin text-white/40" />}
-          {fmtDay(days[0])} تا {fmtDay(days[6])}
+    <div className="card animate-fade-up overflow-hidden">
+      <div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.02] p-4">
+        <button onClick={() => shift(-1)} className="btn-outline p-2"><ChevronRight size={18} /></button>
+        <div className="flex items-center gap-2 text-sm font-bold">
+          {loading && <Loader2 size={15} className="animate-spin text-rose-300" />}
+          <span className="text-gradient">{fmtDay(days[0])} تا {fmtDay(days[6])}</span>
         </div>
-        <button onClick={() => shift(1)} className="btn-ghost p-2"><ChevronLeft size={18} /></button>
+        <button onClick={() => shift(1)} className="btn-outline p-2"><ChevronLeft size={18} /></button>
       </div>
 
       <div className="overflow-x-auto">
@@ -68,20 +68,24 @@ export function ProviderCalendar({ providerId }: { providerId: string }) {
           {/* header row */}
           <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-white/[0.06]">
             <div className="p-2" />
-            {days.map((d, i) => (
-              <div key={i} className="border-r border-white/[0.04] p-2 text-center">
-                <p className="text-xs font-semibold">{WD[i]}</p>
-                <p className="text-[11px] text-white/40">{fmtDay(d)}</p>
-              </div>
-            ))}
+            {days.map((d, i) => {
+              const now = new Date();
+              const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+              return (
+                <div key={i} className={`border-r border-white/[0.04] p-2 text-center transition ${isToday ? "bg-rose-500/10" : ""}`}>
+                  <p className={`text-xs font-bold ${isToday ? "text-rose-200" : ""}`}>{WD[i]}</p>
+                  <p className={`text-[11px] ${isToday ? "font-bold text-rose-300" : "text-white/40"}`}>{fmtDay(d)}</p>
+                </div>
+              );
+            })}
           </div>
 
           {/* hour rows */}
           <div className="relative">
             {HOURS.map((h) => (
-              <div key={h} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-white/[0.03]">
-                <div className="p-2 text-left text-[11px] text-white/30" dir="ltr">{String(h).padStart(2, "0")}:00</div>
-                {days.map((_, i) => <div key={i} className="h-16 border-r border-white/[0.04]" />)}
+              <div key={h} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-white/[0.04]">
+                <div className="p-2 text-left text-[11px] font-semibold text-white/35" dir="ltr">{String(h).padStart(2, "0")}:00</div>
+                {days.map((_, i) => <div key={i} className="h-16 border-r border-white/[0.04] transition hover:bg-white/[0.02]" />)}
               </div>
             ))}
 
@@ -100,7 +104,7 @@ export function ProviderCalendar({ providerId }: { providerId: string }) {
                 return (
                   <div
                     key={a.id}
-                    className={`absolute rounded-lg border p-1.5 text-[10px] leading-4 ${statusColor[a.status] ?? "border-white/20 bg-white/5"}`}
+                    className={`absolute rounded-xl border p-1.5 text-[10px] leading-4 backdrop-blur-sm transition hover:z-10 hover:scale-[1.03] ${statusColor[a.status] ?? "border-white/20 bg-white/5"}`}
                     style={{
                       top: `${top + 33}px`,
                       height: `${height - 3}px`,
@@ -111,7 +115,7 @@ export function ProviderCalendar({ providerId }: { providerId: string }) {
                     title={`${a.customer.name} — ${a.service?.name ?? a.line.name}`}
                   >
                     <p className="truncate font-bold">{new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit" }).format(s)} {a.customer.name}</p>
-                    <p className="truncate text-white/60">{a.service?.name ?? a.line.name}</p>
+                    <p className="truncate opacity-70">{a.service?.name ?? a.line.name}</p>
                   </div>
                 );
               });

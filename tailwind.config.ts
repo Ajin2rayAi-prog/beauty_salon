@@ -37,6 +37,26 @@ const config: Config = {
           900: "#581c87",
           950: "#3b0764",
         },
+        coral: {
+          200: "#ffd0bf",
+          300: "#ffb199",
+          400: "#ff9270",
+          500: "#ff7a59",
+          600: "#f2603c",
+        },
+        mint: {
+          200: "#b6f2df",
+          300: "#7fe6c6",
+          400: "#4dd8ae",
+          500: "#34d3aa",
+          600: "#17b98f",
+        },
+        gold: {
+          200: "#ffe9bd",
+          300: "#ffd98f",
+          400: "#ffcd6b",
+          500: "#f7b73f",
+        },
       },
       backgroundImage: {
         "rose-gradient": "linear-gradient(135deg, #ec4889 0%, #a855f7 100%)",
