@@ -1,4 +1,4 @@
-import { requireRole, ROLES } from "@/lib/auth-guards";
+import { requireRole, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { StatusBadge } from "@/components/Badge";
 import { timeAgo } from "@/lib/utils";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminNotificationsPage() {
   const user = await requireRole([ROLES.ADMIN]);
-  const salonId = user.salonId!;
+  const salonId = await activeSalonId(user);
 
   const [notifications, smsLogs] = await Promise.all([
     prisma.notification.findMany({ where: { salonId }, orderBy: { createdAt: "desc" }, take: 40 }),

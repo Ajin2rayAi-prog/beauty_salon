@@ -4,6 +4,7 @@ import { Providers } from "./providers";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "http://localhost:9091"),
   title: "سالن | پلتفرم مدیریت و رزرو سالن زیبایی",
   description:
     "رزرو آنلاین نوبت، مدیریت لاین‌های زیبایی، صف جایگزین خودکار و گزارش مالی برای سالن‌های زیبایی بانوان",

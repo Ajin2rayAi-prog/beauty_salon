@@ -1,4 +1,4 @@
-import { requireRole, ROLES } from "@/lib/auth-guards";
+import { requireRole, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { LinesClient } from "./LinesClient";
 import { Scissors } from "lucide-react";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLinesPage() {
   const user = await requireRole([ROLES.ADMIN]);
-  const salonId = user.salonId!;
+  const salonId = await activeSalonId(user);
 
   const lines = await prisma.line.findMany({
     where: { salonId },

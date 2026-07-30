@@ -1,7 +1,12 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { authOptions } from "./auth";
+import { prisma } from "./prisma";
+import { getSalonEntitlements, type FeatureKey } from "./entitlements";
+
+export const ACTIVE_SALON_COOKIE = "active_salon";
 
 // Roles
 export const ROLES = {
@@ -93,4 +98,61 @@ export function salonScope(user: SessionUser, requestedSalonId?: string) {
   if (user.role === ROLES.PLATFORM) return requestedSalonId ?? null;
   if (user.role === ROLES.ADMIN) return requestedSalonId ?? user.salonId ?? null;
   return user.salonId ?? null;
+}
+
+/**
+ * Feature guard for pages/layouts. Redirects to the salon's admin home with a
+ * `?blocked=<key>` flag when the feature is off for that salon (or the license
+ * is invalid). PLATFORM bypasses gating.
+ */
+export async function requireFeature(
+  salonId: string | null | undefined,
+  key: FeatureKey,
+  redirectTo = "/admin"
+): Promise<void> {
+  if (!salonId) redirect(redirectTo);
+  const ent = await getSalonEntitlements(salonId!);
+  if (!ent.features[key]) redirect(`${redirectTo}?blocked=${key}`);
+}
+
+/** Feature guard for API routes. Returns a 403 response when the feature is off. */
+export async function assertFeatureApi(salonId: string | null | undefined, key: FeatureKey) {
+  if (!salonId) {
+    return { ok: false as const, response: NextResponse.json({ error: "سالن نامعتبر" }, { status: 400 }) };
+  }
+  const ent = await getSalonEntitlements(salonId);
+  if (!ent.features[key]) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: "این قابلیت برای سالن شما فعال نیست" }, { status: 403 }),
+    };
+  }
+  return { ok: true as const, response: null };
+}
+
+/**
+ * Resolve the ADMIN's currently-active salon (multi-branch switcher).
+ * Reads the `active_salon` cookie and validates it belongs to the admin's
+ * tenant; otherwise falls back to their home salon. This keeps every write
+ * inside the tenant even if the cookie is tampered with.
+ */
+export async function activeSalonId(user: SessionUser): Promise<string> {
+  const home = user.salonId ?? "__none__";
+  const picked = cookies().get(ACTIVE_SALON_COOKIE)?.value;
+  if (!picked || picked === home) return home;
+  const salon = await prisma.salon.findFirst({
+    where: { id: picked, tenantId: user.tenantId ?? "__none__" },
+    select: { id: true },
+  });
+  return salon?.id ?? home;
+}
+
+/** List the salons an ADMIN can manage (their tenant's salons). */
+export async function tenantSalons(user: SessionUser) {
+  if (!user.tenantId) return [];
+  return prisma.salon.findMany({
+    where: { tenantId: user.tenantId },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true, active: true },
+  });
 }

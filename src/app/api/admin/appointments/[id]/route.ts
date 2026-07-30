@@ -1,19 +1,23 @@
 import { NextResponse } from "next/server";
-import { requireRoleApi, ROLES } from "@/lib/auth-guards";
+import { requireRoleApi, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { splitRevenue } from "@/lib/utils";
+import { getSalonEntitlements } from "@/lib/entitlements";
+import { awardLoyaltyForPayment } from "@/lib/loyalty";
+import { notify } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const { user, response } = await requireRoleApi([ROLES.ADMIN]);
   if (response) return response;
+  const salonId = await activeSalonId(user);
 
   const appt = await prisma.appointment.findUnique({
     where: { id: params.id },
     include: { line: true, customer: true },
   });
-  if (!appt || appt.salonId !== user.salonId) {
+  if (!appt || appt.salonId !== salonId) {
     return NextResponse.json({ error: "نوبت پیدا نشد" }, { status: 404 });
   }
 
@@ -45,6 +49,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         providerShare,
       },
     });
+    // Loyalty: award points if the salon has the باشگاه مشتریان feature.
+    const ent = await getSalonEntitlements(appt.salonId);
+    if (ent.features.loyalty) {
+      await awardLoyaltyForPayment(appt.customerId, appt.amount);
+    }
     message = "پرداخت ثبت شد";
   } else {
     return NextResponse.json({ error: "اقدام نامعتبر" }, { status: 400 });
@@ -68,6 +77,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         link: "/customer",
       },
     });
+  }
+
+  // SMS the customer when a booking is confirmed or cancelled (gated by reminders)
+  if ((action === "confirm" || action === "cancel") && appt.customer.phone) {
+    try {
+      const ent = await getSalonEntitlements(appt.salonId);
+      if (ent.features.reminders) {
+        const when = new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(appt.startAt);
+        await notify({
+          salonId: appt.salonId,
+          phone: appt.customer.phone,
+          title: action === "confirm" ? "تأیید نوبت" : "لغو نوبت",
+          body: action === "confirm"
+            ? `نوبت شما (${appt.line.name}) برای ${when} تأیید شد.`
+            : `نوبت شما (${appt.line.name}) برای ${when} لغو شد.`,
+        });
+      }
+    } catch (e) {
+      console.error("appointment:notify failed", e);
+    }
   }
 
   return NextResponse.json({ ok: true, appointment, message });

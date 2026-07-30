@@ -1,4 +1,4 @@
-import { requireRole, ROLES } from "@/lib/auth-guards";
+import { requireRole, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { AppointmentsClient } from "./AppointmentsClient";
 import { CalendarClock } from "lucide-react";
@@ -11,7 +11,7 @@ export default async function AdminAppointmentsPage({
   searchParams: { status?: string; lineId?: string; providerId?: string };
 }) {
   const user = await requireRole([ROLES.ADMIN]);
-  const salonId = user.salonId!;
+  const salonId = await activeSalonId(user);
 
   const where: any = { salonId };
   if (searchParams.status) where.status = searchParams.status;

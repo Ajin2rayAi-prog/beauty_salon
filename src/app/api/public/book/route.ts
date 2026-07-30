@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { iranianDayIndex } from "@/lib/utils";
+import { notify } from "@/lib/notify";
+import { getSalonEntitlements } from "@/lib/entitlements";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +100,25 @@ export async function POST(req: Request) {
       },
     ],
   });
+
+  // confirmation SMS to the customer (best-effort, gated by the reminders feature)
+  try {
+    const ent = await getSalonEntitlements(salonId);
+    if (ent.features.reminders) {
+      const salon = await prisma.salon.findUnique({ where: { id: salonId }, select: { name: true } });
+      const when = new Intl.DateTimeFormat("fa-IR", {
+        dateStyle: "medium", timeStyle: "short",
+      }).format(startAt);
+      await notify({
+        salonId,
+        phone,
+        title: "ثبت نوبت",
+        body: `${salon?.name ?? "سالن"}: نوبت شما (${line.name}) برای ${when} ثبت شد.`,
+      });
+    }
+  } catch (e) {
+    console.error("book:notify failed", e);
+  }
 
   // ONLINE: create pending payment + return ZarinPal request payload
   if (method === "ONLINE") {

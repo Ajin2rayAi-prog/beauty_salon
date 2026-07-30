@@ -36,6 +36,8 @@ model Salon {
   id          String   @id @default(cuid())
   tenantId    String
   slug        String   @unique // url: /s/{slug}
+  subdomain   String?  @unique // url: {subdomain}.rootdomain  (resolved in middleware)
+  customDomain String? @unique // white-label: salon's own domain
   name        String
   description String?
   address     String?
@@ -43,6 +45,17 @@ model Salon {
   city        String?
   logoUrl     String?
   coverUrl    String?
+  // Per-salon feature overrides (JSON: { featureKey: boolean }); merged over plan defaults
+  featureOverrides String?
+  // SEO / Google Business
+  metaTitle   String?
+  metaDesc    String?
+  ogImage     String?
+  lat         Float?
+  lng         Float?
+  googlePlaceId String?
+  ratingValue Float?   @default(0)
+  ratingCount Int      @default(0)
   // SMS credit (toman) — consumed by automatic notifications
   smsCredit   Int      @default(0)
   // business hours (default window; per-provider schedule overrides)
@@ -61,6 +74,8 @@ model Salon {
   notifications Notification[]
   payments     Payment[]
   smsLogs      SmsLog[]
+  products     Product[]
+  reviews      Review[]
 
   @@index([tenantId])
 }
@@ -205,9 +220,18 @@ model Customer {
   name      String
   phone     String
   notes     String?
+  // پرونده مشتری (customer record)
+  hairFormula String?  // recorded color formula(s)
+  allergies   String?  // known allergies / sensitivities
+  skinNotes   String?  // skin type / treatment notes
+  birthday    DateTime?
+  // باشگاه مشتریان (loyalty)
+  loyaltyPoints Int    @default(0)
+  loyaltyTier   String @default("BRONZE") // BRONZE | SILVER | GOLD
   createdAt DateTime @default(now())
 
   appointments Appointment[]
+  reviews      Review[]
 
   @@unique([salonId, phone])
   @@index([salonId])
@@ -236,6 +260,7 @@ model Appointment {
   amount     Int      @default(0) // total toman
   deposit    Int      @default(0) // prepaid toman
   notes      String?
+  reminderSentAt DateTime? // set once a reminder SMS has been sent, prevents duplicates
   createdAt  DateTime @default(now())
 
   payment Payment?
@@ -363,4 +388,38 @@ model SiteSetting {
   id    String @id @default(cuid())
   key   String @unique
   value String
+}
+
+// ─── Inventory (انبار محصولات و مواد مصرفی) ─────────────────────────────────
+model Product {
+  id        String   @id @default(cuid())
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  name      String
+  unit      String   @default("عدد") // عدد | گرم | میلی‌لیتر ...
+  stock     Float    @default(0)
+  minStock  Float    @default(0) // low-stock threshold
+  cost      Int      @default(0) // buy price, toman
+  price     Int      @default(0) // sell price, toman (0 = consumable, not sold)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([salonId])
+}
+
+// ─── Reviews (نظرات مشتریان) ─────────────────────────────────────────────────
+model Review {
+  id         String   @id @default(cuid())
+  salonId    String
+  salon      Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  providerId String?
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  authorName String
+  rating     Int      @default(5) // 1..5
+  text       String
+  approved   Boolean  @default(false) // admin moderates before public display
+  createdAt  DateTime @default(now())
+
+  @@index([salonId, approved])
 }

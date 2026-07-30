@@ -1,4 +1,4 @@
-import { requireRole, ROLES } from "@/lib/auth-guards";
+import { requireRole, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { SettingsClient } from "./SettingsClient";
 import { Settings } from "lucide-react";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
   const user = await requireRole([ROLES.ADMIN]);
-  const salon = await prisma.salon.findUnique({ where: { id: user.salonId! } });
+  const salon = await prisma.salon.findUnique({ where: { id: await activeSalonId(user) } });
   if (!salon) throw new Error("سالن پیدا نشد");
 
   return (

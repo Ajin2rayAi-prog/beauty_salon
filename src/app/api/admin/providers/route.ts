@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRoleApi, ROLES } from "@/lib/auth-guards";
+import { requireRoleApi, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 import { providerAvatar } from "@/lib/images";
 import bcrypt from "bcryptjs";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const { user, response } = await requireRoleApi([ROLES.ADMIN]);
   if (response) return response;
-  const salonId = user.salonId!;
+  const salonId = await activeSalonId(user);
   const tenantId = user.tenantId!;
 
   const body = await req.json().catch(() => ({}));

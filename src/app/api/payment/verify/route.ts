@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { splitRevenue } from "@/lib/utils";
+import { getSalonEntitlements } from "@/lib/entitlements";
+import { awardLoyaltyForPayment } from "@/lib/loyalty";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +55,12 @@ export async function GET(req: Request) {
         }),
         prisma.pendingPayment.update({ where: { authority }, data: { status: "APPROVED", refId } }),
       ]);
+
+      // Loyalty: award points for the deposit if the salon has the feature.
+      const ent = await getSalonEntitlements(appt.salonId);
+      if (ent.features.loyalty) {
+        await awardLoyaltyForPayment(appt.customerId, pending.amount);
+      }
 
       return NextResponse.redirect(`${APP_URL}/s/book/success?id=${appointmentId}&pay=ok&ref=${refId}`);
     }

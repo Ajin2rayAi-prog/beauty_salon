@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
-import { Building2, Store, Plus, Loader2, X, ExternalLink, BadgeCheck } from "lucide-react";
+import { Building2, Store, Plus, Loader2, X, ExternalLink, BadgeCheck, Sparkles } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -158,9 +158,14 @@ function TenantList({ tenants }: { tenants: Tenant[] }) {
                   <span className="truncate">{s.name}</span>
                   {!s.active && <Badge className="text-zinc-400 bg-zinc-400/10 border-zinc-400/20 text-[10px]">غیرفعال</Badge>}
                 </span>
-                <Link href={`/s/${s.slug}`} target="_blank" className="inline-flex shrink-0 items-center gap-1 text-xs text-rose-300 hover:underline">
-                  /s/{s.slug} <ExternalLink size={12} />
-                </Link>
+                <span className="inline-flex shrink-0 items-center gap-3">
+                  <Link href={`/platform/salons/${s.id}/features`} className="inline-flex items-center gap-1 text-xs text-emerald-300 hover:underline">
+                    <Sparkles size={12} /> قابلیت‌ها
+                  </Link>
+                  <Link href={`/s/${s.slug}`} target="_blank" className="inline-flex items-center gap-1 text-xs text-rose-300 hover:underline">
+                    /s/{s.slug} <ExternalLink size={12} />
+                  </Link>
+                </span>
               </div>
             ))}
             {t.salons.length === 0 && <p className="text-xs text-white/35">سالنی ندارد</p>}

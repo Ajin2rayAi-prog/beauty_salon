@@ -60,6 +60,7 @@ const config: Config = {
       },
       backgroundImage: {
         "rose-gradient": "linear-gradient(135deg, #ec4889 0%, #a855f7 100%)",
+        "plum-gradient": "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)",
         "soft-radial": "radial-gradient(circle at 30% 20%, rgba(236,72,137,0.12), transparent 60%)",
       },
       boxShadow: {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRoleApi, ROLES } from "@/lib/auth-guards";
+import { requireRoleApi, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +13,6 @@ export async function PATCH(req: Request) {
   const data: any = {};
   for (const k of allowed) if (body[k] !== undefined) data[k] = body[k] === "" ? null : body[k];
 
-  const updated = await prisma.salon.update({ where: { id: user.salonId! }, data });
+  const updated = await prisma.salon.update({ where: { id: await activeSalonId(user) }, data });
   return NextResponse.json({ ok: true, salon: { id: updated.id, name: updated.name } });
 }

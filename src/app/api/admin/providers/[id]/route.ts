@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRoleApi, ROLES } from "@/lib/auth-guards";
+import { requireRoleApi, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (response) return response;
 
   const provider = await prisma.provider.findUnique({ where: { id: params.id }, select: { salonId: true } });
-  if (!provider || provider.salonId !== user.salonId) {
+  if (!provider || provider.salonId !== (await activeSalonId(user))) {
     return NextResponse.json({ error: "خدمت‌دهنده پیدا نشد" }, { status: 404 });
   }
 

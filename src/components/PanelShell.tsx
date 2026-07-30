@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Scissors, Users, CalendarClock, Wallet, Bell, Settings,
   CalendarDays, Clock, Camera, CalendarHeart, Building2, BadgeCheck,
   FileText, Sparkles, LayoutTemplate,
+  ClipboardList, Package, Star, Store, Gift,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ export const PANEL_ICONS = {
   LayoutDashboard, Scissors, Users, CalendarClock, Wallet, Bell, Settings,
   CalendarDays, Clock, Camera, CalendarHeart, Building2, BadgeCheck,
   FileText, Sparkles, LayoutTemplate,
+  ClipboardList, Package, Star, Store, Gift,
 } satisfies Record<string, LucideIcon>;
 
 export type PanelIconName = keyof typeof PANEL_ICONS;
@@ -35,11 +37,13 @@ export function PanelShell({
   roleLabel,
   items,
   user,
+  topSlot,
   children,
 }: {
   roleLabel: string;
   items: NavItem[];
   user: { name: string; avatar?: string | null };
+  topSlot?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -71,6 +75,7 @@ export function PanelShell({
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-l border-white/[0.06] bg-[#150b1f]/80 p-5 backdrop-blur-xl lg:flex">
         <Link href="/" className="mb-1 block"><Wordmark /></Link>
         <p className="mb-6 text-[11px] text-white/40">{roleLabel}</p>
+        {topSlot}
         <div className="flex-1 overflow-y-auto">{nav}</div>
         <UserCard user={user} />
       </aside>
@@ -98,6 +103,7 @@ export function PanelShell({
                   <X size={20} />
                 </button>
               </div>
+              {topSlot}
               <div className="flex-1 overflow-y-auto">{nav}</div>
               <UserCard user={user} />
             </div>

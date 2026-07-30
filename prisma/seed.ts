@@ -82,15 +82,28 @@ async function main() {
   // ── Demo Salon ────────────────────────────────────────────────────────────
   const salon = await prisma.salon.upsert({
     where: { slug: "kia" },
-    update: {},
+    update: {
+      subdomain: "kia",
+      metaTitle: "سالن زیبایی کیا — رزرو آنلاین نوبت در سعادت‌آباد تهران",
+      metaDesc: "رزرو آنلاین نوبت فیشیال، میکاپ، رنگ مو، ناخن و مژه در سالن بانوان کیا، سعادت‌آباد تهران. مشاهده نمونه‌کار و نظرات مشتریان.",
+      ogImage: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&h=630&fit=crop&q=80&auto=format",
+      lat: 35.7796,
+      lng: 51.3712,
+    },
     create: {
       slug: "kia",
+      subdomain: "kia",
       tenantId: tenant.id,
       name: "سالن زیبایی بانوان کیا",
       description: "مرکز تخصصی زیبایی بانوان؛ فیشیال، مانیکور، پدیکور، میکاپ، رنگ مو، لاش و برو.",
       address: "تهران، سعادت‌آباد، بلوار دریا",
       phone: "02122000000",
       city: "تهران",
+      metaTitle: "سالن زیبایی کیا — رزرو آنلاین نوبت در سعادت‌آباد تهران",
+      metaDesc: "رزرو آنلاین نوبت فیشیال، میکاپ، رنگ مو، ناخن و مژه در سالن بانوان کیا، سعادت‌آباد تهران. مشاهده نمونه‌کار و نظرات مشتریان.",
+      ogImage: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&h=630&fit=crop&q=80&auto=format",
+      lat: 35.7796,
+      lng: 51.3712,
       smsCredit: 50000,
       openTime: "09:00",
       closeTime: "21:00",
@@ -364,6 +377,68 @@ async function main() {
     where: { key: "platformName" },
     update: {},
     create: { key: "platformName", value: "سالن‌پرو" },
+  });
+
+  // ── Customer records + loyalty (پرونده مشتری + باشگاه مشتریان) ─────────────
+  const records: Array<{ idx: number; hair?: string; allergy?: string; skin?: string; pts: number }> = [
+    { idx: 0, hair: "پایه ۷.۰ + اکسیدان ۶٪ (نسبت ۱:۱.۵)، مش ۹.۱", allergy: "حساسیت به آمونیاک", skin: "پوست مختلط، مستعد لک", pts: 620 },
+    { idx: 1, hair: "بالیاژ روی پایه ۵، تونر بژ", skin: "پوست خشک", pts: 210 },
+    { idx: 2, allergy: "حساسیت به چسب مژه", skin: "پوست حساس و قرمزی‌پذیر", pts: 90 },
+    { idx: 3, hair: "رنگ شکلاتی ۴.۷", pts: 40 },
+  ];
+  for (const r of records) {
+    await prisma.customer.update({
+      where: { id: customers[r.idx] },
+      data: {
+        hairFormula: r.hair ?? null,
+        allergies: r.allergy ?? null,
+        skinNotes: r.skin ?? null,
+        loyaltyPoints: r.pts,
+        loyaltyTier: r.pts >= 500 ? "GOLD" : r.pts >= 150 ? "SILVER" : "BRONZE",
+      },
+    });
+  }
+
+  // ── Inventory (انبار) ──────────────────────────────────────────────────────
+  await prisma.product.deleteMany({ where: { salonId: salon.id } });
+  await prisma.product.createMany({
+    data: [
+      { salonId: salon.id, name: "رنگ مو لورآل بلوند ۹.۱", unit: "عدد", stock: 24, minStock: 6, cost: 180000, price: 320000 },
+      { salonId: salon.id, name: "اکسیدان ۶٪ (۱ لیتری)", unit: "میلی‌لیتر", stock: 3200, minStock: 1000, cost: 95000, price: 0 },
+      { salonId: salon.id, name: "چسب اکستنشن مژه", unit: "عدد", stock: 4, minStock: 5, cost: 420000, price: 0 },
+      { salonId: salon.id, name: "لاک ژل کالر (رنگ‌بندی)", unit: "عدد", stock: 38, minStock: 10, cost: 140000, price: 260000 },
+      { salonId: salon.id, name: "ماسک آبرسان صورت", unit: "عدد", stock: 12, minStock: 4, cost: 210000, price: 480000 },
+      { salonId: salon.id, name: "دستمال یکبار مصرف (بسته)", unit: "عدد", stock: 60, minStock: 15, cost: 55000, price: 0 },
+    ],
+  });
+
+  // ── Reviews (نظرات مشتریان) ────────────────────────────────────────────────
+  await prisma.review.deleteMany({ where: { salonId: salon.id } });
+  const reviewDefs: Array<{ ci: number; name: string; rating: number; text: string; approved: boolean }> = [
+    { ci: 0, name: "نگار محمدی", rating: 5, text: "میکاپ عروسم فوق‌العاده موند، تا آخر شب هیچ ریزشی نداشت. حتماً برمی‌گردم.", approved: true },
+    { ci: 2, name: "شیرین کاظمی", rating: 5, text: "فیشیال خیلی حرفه‌ای بود و پوستم واقعاً شفاف شد. برخورد پرسنل هم عالی.", approved: true },
+    { ci: 1, name: "الهه حسینی", rating: 4, text: "بالیاژ خوشرنگی شد، فقط کمی طول کشید. در کل راضی‌ام.", approved: true },
+    { ci: 3, name: "باران رستمی", rating: 5, text: "کاشت ناخن تمیز و باکیفیت. طراحی دقیقاً همون چیزی شد که خواستم.", approved: true },
+    { ci: 4, name: "ترانه عزیزی", rating: 5, text: "اکستنشن مژه طبیعی و سبک، خیلی راحتم.", approved: false },
+  ];
+  for (const rv of reviewDefs) {
+    await prisma.review.create({
+      data: {
+        salonId: salon.id,
+        customerId: customers[rv.ci],
+        authorName: rv.name,
+        rating: rv.rating,
+        text: rv.text,
+        approved: rv.approved,
+      },
+    });
+  }
+  // reflect approved reviews on the salon's aggregate rating
+  const approved = reviewDefs.filter((r) => r.approved);
+  const ratingValue = approved.length ? approved.reduce((s, r) => s + r.rating, 0) / approved.length : 0;
+  await prisma.salon.update({
+    where: { id: salon.id },
+    data: { ratingValue: Math.round(ratingValue * 10) / 10, ratingCount: approved.length },
   });
 
   console.log("✔ Seed complete: 1 tenant, 1 salon (kia),", lineDefs.length, "lines,",

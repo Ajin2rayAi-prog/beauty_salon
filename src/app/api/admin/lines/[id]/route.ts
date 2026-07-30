@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRoleApi, ROLES } from "@/lib/auth-guards";
+import { requireRoleApi, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +13,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const rentAmount = Math.max(0, Math.floor(Number(body.rentAmount) || 0));
   const commissionPercent = Math.min(100, Math.max(0, Number(body.commissionPercent) || 0));
 
-  // scope: only lines belonging to this admin's salon
+  // scope: only lines belonging to this admin's active salon
   const line = await prisma.line.findUnique({ where: { id: params.id }, select: { salonId: true } });
-  if (!line || line.salonId !== user.salonId) {
+  if (!line || line.salonId !== (await activeSalonId(user))) {
     return NextResponse.json({ error: "لاین پیدا نشد" }, { status: 404 });
   }
 

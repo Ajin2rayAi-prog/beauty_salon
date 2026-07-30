@@ -8,8 +8,59 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSalonContent } from "@/lib/content";
 import { providerAvatar } from "@/lib/images";
+import { getSalonEntitlements } from "@/lib/entitlements";
+import { ReviewForm } from "./ReviewForm";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: { salonSlug: string } }): Promise<Metadata> {
+  const salon = await prisma.salon.findFirst({
+    where: { active: true, OR: [{ slug: params.salonSlug }, { subdomain: params.salonSlug }] },
+    select: { id: true, name: true, description: true, city: true, metaTitle: true, metaDesc: true, ogImage: true, coverUrl: true, slug: true },
+  });
+  if (!salon) return { title: "سالن پیدا نشد" };
+
+  const ent = await getSalonEntitlements(salon.id);
+  if (!ent.licensed) return { title: "سالن پیدا نشد", robots: { index: false, follow: false } };
+
+  // Without the SEO feature we still emit a sensible title but no rich social tags.
+  const title = salon.metaTitle || `${salon.name}${salon.city ? ` — ${salon.city}` : ""}`;
+  const description = salon.metaDesc || salon.description || `رزرو آنلاین نوبت در ${salon.name}`;
+  if (!ent.features.seo) return { title, description };
+
+  const image = salon.ogImage || salon.coverUrl || undefined;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/s/${salon.slug}` },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      locale: "fa_IR",
+      siteName: salon.name,
+      images: image ? [{ url: image }] : undefined,
+    },
+    twitter: { card: image ? "summary_large_image" : "summary", title, description, images: image ? [image] : undefined },
+  };
+}
+
+/** Normalize a WhatsApp number into a wa.me link (digits only, keep country code). */
+function waLink(v: string): string {
+  const digits = v.replace(/[^\d]/g, "").replace(/^0/, "98");
+  return `https://wa.me/${digits}`;
+}
+/** Instagram handle → profile URL (accepts @handle, handle, or full URL). */
+function igLink(v: string): string {
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://instagram.com/${v.replace(/^@/, "")}`;
+}
+/** Telegram handle → t.me URL. */
+function tgLink(v: string): string {
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://t.me/${v.replace(/^@/, "")}`;
+}
 
 const LINE_THEMES = [
   "from-rose-500 to-plum-500", "from-coral-500 to-rose-500", "from-plum-500 to-sky-500",
@@ -18,8 +69,10 @@ const LINE_THEMES = [
 
 export default async function SalonPage({ params }: { params: { salonSlug: string } }) {
   const session = await getServerSession(authOptions);
-  const salon = await prisma.salon.findUnique({
-    where: { slug: params.salonSlug, active: true },
+  // The path segment may be a slug OR a subdomain label (middleware rewrites
+  // `{sub}.domain` → `/s/{sub}`), so match either.
+  const salon = await prisma.salon.findFirst({
+    where: { active: true, OR: [{ slug: params.salonSlug }, { subdomain: params.salonSlug }] },
     include: {
       lines: { where: { active: true }, orderBy: { order: "asc" } },
       providers: {
@@ -33,6 +86,22 @@ export default async function SalonPage({ params }: { params: { salonSlug: strin
   });
   if (!salon) notFound();
 
+  // License gate — a suspended/expired tenant's site goes dark.
+  const ent = await getSalonEntitlements(salon.id);
+  if (!ent.licensed) notFound();
+  const showSocial = !!ent.features.socialCta;
+  const whiteLabel = ent.plan === "WHITELABEL";
+  const showReviews = !!ent.features.reviews;
+
+  const reviews = showReviews
+    ? await prisma.review.findMany({
+        where: { salonId: salon.id, approved: true },
+        orderBy: { createdAt: "desc" },
+        take: 12,
+        select: { id: true, authorName: true, rating: true, text: true },
+      })
+    : [];
+
   const content = await getSalonContent(salon.id);
   const HL_ICONS: Record<string, any> = { Sparkles, Clock, Heart, Star, Shield, Award };
 
@@ -40,11 +109,30 @@ export default async function SalonPage({ params }: { params: { salonSlug: strin
     Sparkles: "✨", Hand: "💅", Brush: "💄", Palette: "🎨", Eye: "👁️", Feather: "🪶",
   };
 
+  // JSON-LD (schema.org BeautySalon) — only when the SEO feature is enabled.
+  const jsonLd = ent.features.seo
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BeautySalon",
+        name: salon.name,
+        description: salon.metaDesc || salon.description || undefined,
+        image: salon.ogImage || salon.coverUrl || undefined,
+        telephone: salon.phone || undefined,
+        address: salon.address ? { "@type": "PostalAddress", streetAddress: salon.address, addressLocality: salon.city || undefined } : undefined,
+        geo: salon.lat != null && salon.lng != null ? { "@type": "GeoCoordinates", latitude: salon.lat, longitude: salon.lng } : undefined,
+        openingHours: `Mo-Su ${salon.openTime}-${salon.closeTime}`,
+        aggregateRating: salon.ratingCount > 0 ? { "@type": "AggregateRating", ratingValue: salon.ratingValue, reviewCount: salon.ratingCount } : undefined,
+      }
+    : null;
+
   return (
     <div className="relative min-h-screen">
+      {jsonLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      )}
       <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#0f0716]/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/"><Wordmark /></Link>
+          <Link href="/">{whiteLabel ? <span className="font-black text-gradient">{salon.name}</span> : <Wordmark />}</Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             {session?.user ? (
@@ -81,11 +169,11 @@ export default async function SalonPage({ params }: { params: { salonSlug: strin
             <span className="eyebrow"><Sparkles size={14} /> {content.about.title}</span>
             <h2 className="mt-3 text-2xl font-black sm:text-3xl">{content.about.title}</h2>
             <p className="mt-4 leading-8 text-white/60">{content.about.body}</p>
-            {(content.social.instagram || content.social.telegram || content.social.whatsapp) && (
+            {showSocial && (content.social.instagram || content.social.telegram || content.social.whatsapp) && (
               <div className="mt-6 flex flex-wrap gap-2.5">
-                {content.social.instagram && <span className="glass flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs text-plum-200"><Instagram size={14} /> {content.social.instagram}</span>}
-                {content.social.telegram && <span className="glass flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs text-sky-200"><Send size={14} /> {content.social.telegram}</span>}
-                {content.social.whatsapp && <span className="glass flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs text-mint-200" dir="ltr"><MessageCircle size={14} /> {content.social.whatsapp}</span>}
+                {content.social.instagram && <a href={igLink(content.social.instagram)} target="_blank" rel="noopener noreferrer" className="glass flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs text-plum-200 transition hover:bg-white/[0.08] hover:text-plum-100"><Instagram size={14} /> {content.social.instagram}</a>}
+                {content.social.telegram && <a href={tgLink(content.social.telegram)} target="_blank" rel="noopener noreferrer" className="glass flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs text-sky-200 transition hover:bg-white/[0.08] hover:text-sky-100"><Send size={14} /> {content.social.telegram}</a>}
+                {content.social.whatsapp && <a href={waLink(content.social.whatsapp)} target="_blank" rel="noopener noreferrer" className="glass flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs text-mint-200 transition hover:bg-white/[0.08] hover:text-mint-100" dir="ltr"><MessageCircle size={14} /> {content.social.whatsapp}</a>}
               </div>
             )}
           </div>
@@ -184,11 +272,50 @@ export default async function SalonPage({ params }: { params: { salonSlug: strin
             </div>
           </section>
         )}
+
+        {/* Customer reviews (real, moderated) */}
+        {showReviews && (
+          <section className="py-14">
+            <div className="mb-8 text-center">
+              <span className="eyebrow"><Star size={14} /> نظرات واقعی</span>
+              <h2 className="mt-3 text-2xl font-black sm:text-3xl">امتیاز <span className="text-gradient">مراجعه‌کننده‌ها</span></h2>
+              {salon.ratingCount > 0 && (
+                <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-white/60">
+                  <Star size={15} className="fill-gold-300 text-gold-300" />
+                  <span className="font-bold text-gold-300">{salon.ratingValue?.toFixed(1)}</span>
+                  از {salon.ratingCount} نظر
+                </p>
+              )}
+            </div>
+            {reviews.length > 0 && (
+              <div className="mb-8 columns-1 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5 [&>*]:break-inside-avoid">
+                {reviews.map((r) => (
+                  <div key={r.id} className="card p-5">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star key={i} size={13} className={i <= r.rating ? "fill-gold-300 text-gold-300" : "text-white/20"} />
+                      ))}
+                    </div>
+                    <p className="mt-3 text-sm leading-7 text-white/75">{r.text}</p>
+                    <p className="mt-3 text-xs font-bold text-rose-200">— {r.authorName}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <ReviewForm salonId={salon.id} />
+          </section>
+        )}
       </main>
 
       <footer className="border-t border-white/[0.06] py-8 text-center text-xs text-white/40">
-        <Wordmark className="justify-center" />
-        <p className="mt-2">رزرو آنلاین با <span className="text-rose-300">سالن‌پرو</span></p>
+        {whiteLabel ? (
+          <p className="font-bold text-white/60">{salon.name}</p>
+        ) : (
+          <>
+            <Wordmark className="justify-center" />
+            <p className="mt-2">رزرو آنلاین با <span className="text-rose-300">سالن‌پرو</span></p>
+          </>
+        )}
       </footer>
     </div>
   );

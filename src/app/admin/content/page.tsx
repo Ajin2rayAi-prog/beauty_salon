@@ -1,4 +1,4 @@
-import { requireRole, ROLES } from "@/lib/auth-guards";
+import { requireRole, ROLES, activeSalonId } from "@/lib/auth-guards";
 import { getSalonContent } from "@/lib/content";
 import { ContentClient } from "./ContentClient";
 import { FileText } from "lucide-react";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminContentPage() {
   const user = await requireRole([ROLES.ADMIN]);
-  const content = await getSalonContent(user.salonId!);
+  const content = await getSalonContent(await activeSalonId(user));
 
   return (
     <div className="relative space-y-6">
