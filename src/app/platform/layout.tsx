@@ -10,6 +10,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
     { href: "/platform", label: "داشبورد", icon: "LayoutDashboard" },
     { href: "/platform/tenants", label: "کارفرماها و سالن‌ها", icon: "Building2" },
     { href: "/platform/licenses", label: "لایسنس‌ها", icon: "BadgeCheck" },
+    { href: "/platform/content", label: "محتوای لندینگ", icon: "LayoutTemplate" },
   ];
 
   return (

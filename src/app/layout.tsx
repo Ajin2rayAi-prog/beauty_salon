@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "react-hot-toast";
@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   title: "سالن | پلتفرم مدیریت و رزرو سالن زیبایی",
   description:
     "رزرو آنلاین نوبت، مدیریت لاین‌های زیبایی، صف جایگزین خودکار و گزارش مالی برای سالن‌های زیبایی بانوان",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#0f0716",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -68,7 +68,7 @@ export default async function PlatformDashboardPage() {
           </Link>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="text-right text-xs text-white/40">
                 <th className="pb-3 font-medium">کارفرما</th>
@@ -105,7 +105,7 @@ export default async function PlatformDashboardPage() {
           </Link>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[480px] text-sm">
             <thead>
               <tr className="text-right text-xs text-white/40">
                 <th className="pb-3 font-medium">کارفرما</th>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRoleApi, ROLES } from "@/lib/auth-guards";
 import { prisma } from "@/lib/prisma";
+import { providerAvatar } from "@/lib/images";
 import bcrypt from "bcryptjs";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
   const existingProvider = await prisma.provider.findUnique({ where: { salonId_slug: { salonId, slug } } });
   if (existingProvider) return NextResponse.json({ error: "این اسلاگ در سالن تکراری است" }, { status: 409 });
 
-  const hash = await bcrypt.hash(password || "Kia@123", 10);
+  const hash = await bcrypt.hash(password || "1234", 10);
 
   const userRow = await prisma.user.create({
     data: { name, email, phone, password: hash, role: "PROVIDER", tenantId, salonId },
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
       userId: userRow.id,
       slug,
       title: title || null,
-      photoUrl: `https://picsum.photos/seed/${slug}/300/300`,
+      photoUrl: providerAvatar(slug),
     },
   });
 

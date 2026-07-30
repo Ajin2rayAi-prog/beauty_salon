@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Plus, Loader2, Trash2, X } from "lucide-react";
+import { Camera, Plus, Loader2, Trash2, X, Check, Link2, Image as ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import { GALLERY } from "@/lib/images";
 
 type LineOpt = { id: string; name: string };
 type Item = { id: string; imageUrl: string; caption: string | null; lineId: string | null; line: { id: string; name: string } | null };
@@ -13,6 +14,11 @@ export function PortfolioClient({ providerId, lines, initialItems }: { providerI
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [form, setForm] = useState({ imageUrl: "", caption: "", lineId: lines[0]?.id ?? "" });
+  const [mode, setMode] = useState<"gallery" | "url">("gallery");
+  const [galleryCat, setGalleryCat] = useState<string>("all");
+
+  const categories = ["all", ...Array.from(new Set(GALLERY.map((g) => g.category)))];
+  const galleryItems = galleryCat === "all" ? GALLERY : GALLERY.filter((g) => g.category === galleryCat);
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -59,8 +65,52 @@ export function PortfolioClient({ providerId, lines, initialItems }: { providerI
 
       {showForm && (
         <form onSubmit={add} className="card animate-fade-up space-y-4 p-5">
+          {/* source toggle: pick from gallery OR paste a custom URL */}
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setMode("gallery")}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition ${mode === "gallery" ? "bg-rose-gradient text-white" : "bg-white/[0.05] text-white/55 hover:text-white/80"}`}>
+              <ImageIcon size={14} /> از گالری
+            </button>
+            <button type="button" onClick={() => setMode("url")}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition ${mode === "url" ? "bg-rose-gradient text-white" : "bg-white/[0.05] text-white/55 hover:text-white/80"}`}>
+              <Link2 size={14} /> لینک دلخواه
+            </button>
+          </div>
+
+          {mode === "gallery" ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-1.5">
+                {categories.map((cat) => (
+                  <button key={cat} type="button" onClick={() => setGalleryCat(cat)}
+                    className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${galleryCat === cat ? "bg-rose-500/25 text-rose-100" : "bg-white/[0.04] text-white/50 hover:text-white/75"}`}>
+                    {cat === "all" ? "همه" : cat}
+                  </button>
+                ))}
+              </div>
+              <div className="grid max-h-80 grid-cols-3 gap-2 overflow-y-auto rounded-2xl border border-white/[0.06] p-2 sm:grid-cols-4 md:grid-cols-5">
+                {galleryItems.map((g) => {
+                  const selected = form.imageUrl === g.url;
+                  return (
+                    <button key={g.url} type="button"
+                      onClick={() => setForm((f) => ({ ...f, imageUrl: g.url, caption: f.caption || g.caption }))}
+                      className={`group relative aspect-[3/4] overflow-hidden rounded-xl border-2 transition ${selected ? "border-rose-400" : "border-transparent hover:border-white/25"}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={g.url} alt={g.caption} className="h-full w-full object-cover" loading="lazy" />
+                      {selected && (
+                        <span className="absolute inset-0 grid place-items-center bg-rose-500/40">
+                          <span className="grid h-8 w-8 place-items-center rounded-full bg-white text-rose-600"><Check size={18} /></span>
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div><label className="label">لینک تصویر</label><input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} className="input mt-1.5" dir="ltr" placeholder="https://..." /></div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2"><label className="label">لینک تصویر</label><input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} className="input mt-1.5" dir="ltr" placeholder="https://..." /></div>
             <div><label className="label">لاین</label>
               <select value={form.lineId} onChange={(e) => setForm({ ...form, lineId: e.target.value })} className="input mt-1.5">
                 {lines.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
@@ -69,7 +119,7 @@ export function PortfolioClient({ providerId, lines, initialItems }: { providerI
             <div><label className="label">توضیح (اختیاری)</label><input value={form.caption} onChange={(e) => setForm({ ...form, caption: e.target.value })} className="input mt-1.5" /></div>
           </div>
           <div className="flex gap-2">
-            <button disabled={busy} className="btn-rose px-4 py-2 text-sm">{busy ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} افزودن</button>
+            <button disabled={busy || !form.imageUrl} className="btn-rose px-4 py-2 text-sm">{busy ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} افزودن</button>
             <button type="button" onClick={() => setShowForm(false)} className="btn-ghost px-3 py-2 text-sm"><X size={15} /> انصراف</button>
           </div>
         </form>

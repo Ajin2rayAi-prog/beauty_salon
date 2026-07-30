@@ -13,13 +13,31 @@ async function hash(pw: string) {
   return bcrypt.hash(pw, 10);
 }
 
-// deterministic-ish portfolio placeholder image (no external calls needed)
-const img = (seed: string) => `https://picsum.photos/seed/${seed}/640/800`;
+// Real, beauty-relevant sample imagery via loremflickr's keyword endpoint
+// (deterministic through `lock`). Mirrors src/lib/images.ts — inlined here so
+// the seed script has no path-alias import dependency.
+const LINE_KW: Record<string, string> = {
+  facial: "facial,spa,skincare",
+  nails: "manicure,nails",
+  makeup: "makeup,cosmetics",
+  haircolor: "hairsalon,haircolor",
+  lashes: "eyelash,eye",
+  brows: "eyebrow,makeup",
+};
+function lockOf(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) & 0xffff;
+  return (h % 900) + 1;
+}
+const avatarImg = (seed: string) =>
+  `https://loremflickr.com/400/400/woman,portrait,beauty/?lock=${lockOf("av-" + seed)}`;
+const portfolioImg = (lineSlug: string, seed: string) =>
+  `https://loremflickr.com/600/800/${encodeURIComponent(LINE_KW[lineSlug] ?? "salon,beauty")}/?lock=${lockOf(`pf-${lineSlug}-${seed}`)}`;
 
 async function main() {
   // ── PLATFORM owner ──────────────────────────────────────────────────────
   const platformEmail = process.env.PLATFORM_EMAIL || "platform@salon.local";
-  const platformPw = process.env.PLATFORM_PASSWORD || "Platform@123";
+  const platformPw = process.env.PLATFORM_PASSWORD || "1234";
   await prisma.user.upsert({
     where: { email: platformEmail },
     update: { role: "PLATFORM" },
@@ -80,7 +98,7 @@ async function main() {
     create: {
       name: "مدیریت کیا",
       email: "admin@kia.local",
-      password: await hash("Kia@123"),
+      password: await hash("1234"),
       role: "ADMIN",
       phone: "09120000002",
       tenantId: tenant.id,
@@ -171,12 +189,12 @@ async function main() {
       create: {
         name: p.name,
         email: p.email,
-        password: await hash("Kia@123"),
+        password: await hash("1234"),
         role: "PROVIDER",
         phone: "0912" + Math.floor(1000000 + Math.random() * 8999999),
         tenantId: tenant.id,
         salonId: salon.id,
-        avatar: img(p.imgSeed + "-avatar"),
+        avatar: avatarImg(p.imgSeed),
       },
     });
 
@@ -190,7 +208,7 @@ async function main() {
         title: p.title,
         bio: p.bio,
         instagram: p.ig,
-        photoUrl: img(p.imgSeed + "-avatar"),
+        photoUrl: avatarImg(p.imgSeed),
       },
     });
     providerIds.push(provider.id);
@@ -224,7 +242,7 @@ async function main() {
           data: {
             providerId: provider.id,
             lineId: lines[slug],
-            imageUrl: img(`${p.imgSeed}-${slug}-${k}`),
+            imageUrl: portfolioImg(slug, `${p.imgSeed}-${k}`),
             caption: `نمونه‌کار ${slug === "makeup" ? "میکاپ" : slug === "facial" ? "فیشیال" : slug === "nails" ? "ناخن" : slug === "lashes" ? "مژه" : slug === "brows" ? "ابرو" : "رنگ مو"}`,
           },
         });

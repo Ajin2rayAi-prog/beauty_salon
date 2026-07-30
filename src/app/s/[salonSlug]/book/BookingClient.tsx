@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatPrice, formatNumber, toJalali } from "@/lib/utils";
+import { providerAvatar } from "@/lib/images";
 import { Scissors, Users, CalendarDays, Clock, CreditCard, Store, Check, Loader2, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -192,7 +193,7 @@ export function BookingClient({
                   className={`flex items-center gap-3 rounded-2xl border p-4 text-right transition ${providerId === p.id ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08] hover:border-white/20"}`}>
                   <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.photoUrl ?? `https://picsum.photos/seed/${p.slug}/120/120`} alt={p.title ?? ""} className="h-full w-full object-cover" />
+                    <img src={p.photoUrl ?? providerAvatar(p.slug)} alt={p.title ?? ""} className="h-full w-full object-cover" />
                   </div>
                   <span className="min-w-0">
                     <span className="block truncate font-semibold">{p.title}</span>

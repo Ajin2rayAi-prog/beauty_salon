@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Badge } from "@/components/Badge";
 import { Users, Plus, Loader2, X, Instagram, ToggleLeft, ToggleRight, Scissors } from "lucide-react";
 import toast from "react-hot-toast";
+import { providerAvatar } from "@/lib/images";
 
 type LineOpt = { id: string; name: string };
 type Provider = {
@@ -19,7 +20,7 @@ export function ProvidersClient({ initialProviders, lines }: { initialProviders:
   const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "Kia@123", title: "", slug: "", lineIds: [] as string[] });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "1234", title: "", slug: "", lineIds: [] as string[] });
 
   function toggleLine(id: string) {
     setForm((f) => ({ ...f, lineIds: f.lineIds.includes(id) ? f.lineIds.filter((x) => x !== id) : [...f.lineIds, id] }));
@@ -38,7 +39,7 @@ export function ProvidersClient({ initialProviders, lines }: { initialProviders:
       if (!res.ok) throw new Error(data.error || "خطا در ساخت");
       toast.success("خدمت‌دهنده ساخته شد");
       setProviders((p) => [...p, data.provider]);
-      setForm({ name: "", email: "", phone: "", password: "Kia@123", title: "", slug: "", lineIds: [] });
+      setForm({ name: "", email: "", phone: "", password: "1234", title: "", slug: "", lineIds: [] });
       setShowForm(false);
     } catch (err: any) {
       toast.error(err.message || "خطا در ساخت");
@@ -110,7 +111,7 @@ export function ProvidersClient({ initialProviders, lines }: { initialProviders:
             <div className="flex items-center gap-3">
               <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 border-rose-400/30">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.photoUrl ?? `https://picsum.photos/seed/${p.slug}/120/120`} alt={p.title ?? p.slug} className="h-full w-full object-cover" />
+                <img src={p.photoUrl ?? providerAvatar(p.slug)} alt={p.title ?? p.slug} className="h-full w-full object-cover" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

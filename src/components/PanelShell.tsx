@@ -7,6 +7,7 @@ import {
   LucideIcon, LogOut, Menu, X,
   LayoutDashboard, Scissors, Users, CalendarClock, Wallet, Bell, Settings,
   CalendarDays, Clock, Camera, CalendarHeart, Building2, BadgeCheck,
+  FileText, Sparkles, LayoutTemplate,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { ThemeToggle } from "./ThemeToggle";
 export const PANEL_ICONS = {
   LayoutDashboard, Scissors, Users, CalendarClock, Wallet, Bell, Settings,
   CalendarDays, Clock, Camera, CalendarHeart, Building2, BadgeCheck,
+  FileText, Sparkles, LayoutTemplate,
 } satisfies Record<string, LucideIcon>;
 
 export type PanelIconName = keyof typeof PANEL_ICONS;

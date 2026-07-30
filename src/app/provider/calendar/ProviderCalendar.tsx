@@ -29,6 +29,8 @@ export function ProviderCalendar({ providerId }: { providerId: string }) {
   const [weekStart, setWeekStart] = useState(() => startOfIranianWeek(new Date()));
   const [appts, setAppts] = useState<Appt[]>([]);
   const [loading, setLoading] = useState(false);
+  // Mobile day-view: which weekday (0=Sat..6=Fri) is selected. Defaults to today.
+  const [dayIdx, setDayIdx] = useState(() => (new Date().getDay() + 1) % 7);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
@@ -63,7 +65,7 @@ export function ProviderCalendar({ providerId }: { providerId: string }) {
         <button onClick={() => shift(1)} className="btn-outline p-2"><ChevronLeft size={18} /></button>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="hidden overflow-x-auto lg:block">
         <div className="min-w-[900px]">
           {/* header row */}
           <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-white/[0.06]">
@@ -121,6 +123,68 @@ export function ProviderCalendar({ providerId }: { providerId: string }) {
               });
             })}
           </div>
+        </div>
+      </div>
+
+      {/* ── Mobile day view (below lg) — no horizontal scrolling ── */}
+      <div className="lg:hidden">
+        {/* day picker strip */}
+        <div className="flex gap-1.5 overflow-x-auto border-b border-white/[0.06] p-3">
+          {days.map((d, i) => {
+            const now = new Date();
+            const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+            const active = i === dayIdx;
+            return (
+              <button
+                key={i}
+                onClick={() => setDayIdx(i)}
+                className={`flex min-w-[3.5rem] shrink-0 flex-col items-center gap-0.5 rounded-2xl px-2.5 py-2 text-center transition active:scale-95 ${
+                  active
+                    ? "bg-rose-gradient text-white shadow-[0_8px_20px_-8px_rgba(255,77,151,0.6)]"
+                    : "bg-white/[0.04] text-white/60"
+                }`}
+              >
+                <span className="text-[11px] font-bold">{WD[i].replace("‌شنبه", "ش").replace("شنبه", "ش")}</span>
+                <span className={`text-[11px] ${active ? "text-white/90" : isToday ? "text-rose-300" : "text-white/45"}`}>{fmtDay(d)}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* selected day's appointments */}
+        <div className="space-y-2.5 p-4">
+          {(() => {
+            const day = days[dayIdx];
+            const list = appts
+              .filter((a) => {
+                const s = new Date(a.startAt);
+                return s.getFullYear() === day.getFullYear() && s.getMonth() === day.getMonth() && s.getDate() === day.getDate();
+              })
+              .sort((a, b) => +new Date(a.startAt) - +new Date(b.startAt));
+            if (loading) {
+              return <div className="flex justify-center py-10 text-rose-300"><Loader2 className="animate-spin" /></div>;
+            }
+            if (list.length === 0) {
+              return <p className="py-10 text-center text-sm text-white/40">نوبتی برای این روز ثبت نشده است.</p>;
+            }
+            return list.map((a) => {
+              const s = new Date(a.startAt); const e = new Date(a.endAt);
+              const t = (d: Date) => new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit" }).format(d);
+              return (
+                <div key={a.id} className={`flex items-stretch gap-3 rounded-2xl border p-3 ${statusColor[a.status] ?? "border-white/20 bg-white/5"}`}>
+                  <div className="flex flex-col items-center justify-center border-l border-white/15 pl-3 text-center" dir="ltr">
+                    <span className="text-sm font-black leading-tight">{t(s)}</span>
+                    <span className="text-[10px] opacity-60">{t(e)}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-bold">{a.customer.name}</p>
+                    <p className="truncate text-[12px] opacity-75">{a.service?.name ?? a.line.name}</p>
+                    <p className="mt-0.5 text-[11px] opacity-60">{formatPrice(a.amount)}</p>
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
     </div>

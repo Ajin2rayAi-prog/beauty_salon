@@ -117,7 +117,7 @@ export default async function AdminDashboardPage() {
       <div className="card relative overflow-hidden p-6 animate-fade-up delay-3">
         <h2 className="mb-4 font-black">آخرین نوبت‌ها</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="text-right text-xs text-white/40">
                 <th className="pb-3 font-medium">مشتری</th>

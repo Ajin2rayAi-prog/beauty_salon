@@ -160,6 +160,48 @@ body::before {
 }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
+/* The colour variants below are used standalone across the app (e.g.
+   `className="btn-rose px-4 py-2"`) without the base `.btn`, so they need
+   the shared button layout too. We copy only the *layout* rules — padding
+   and font-size stay owned by the per-button Tailwind utilities so the
+   existing sizing is untouched. This is what turns them into proper pills
+   with centred, gap-aligned icon + label instead of cramped rectangles. */
+.btn-rose,
+.btn-outline,
+.btn-ghost,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.btn-rose:disabled,
+.btn-outline:disabled,
+.btn-ghost:disabled,
+.btn-danger:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Icons must never be squeezed into thin slivers ("چاقو کشیده") when a
+   button sits in a tight flex row — pin their size. */
+.btn > svg, .btn-rose > svg, .btn-outline > svg,
+.btn-ghost > svg, .btn-danger > svg, .nav-link > svg { flex-shrink: 0; }
+
+/* Tactile press feedback — feels native on touch. */
+.btn-rose:active:not(:disabled),
+.btn-outline:active:not(:disabled),
+.btn-ghost:active:not(:disabled),
+.btn-danger:active:not(:disabled) { transform: translateY(1px) scale(0.985); }
+
+/* Comfortable ~44px tap targets for primary actions on phones. */
+@media (max-width: 640px) {
+  .btn-rose, .btn-outline, .btn-danger { min-height: 2.75rem; }
+}
+
 .btn-rose {
   position: relative;
   overflow: hidden;

@@ -5,6 +5,7 @@ import { Wordmark } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CalendarHeart, ArrowRight, Clock, Instagram } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { providerAvatar } from "@/lib/images";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +107,7 @@ export default async function LinePage({
                   <div className="relative shrink-0">
                     <div className="absolute -inset-1 rounded-full bg-rose-gradient opacity-60 blur-sm" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={provider.photoUrl ?? `https://picsum.photos/seed/${provider.slug}/200/200`} alt={provider.title ?? provider.slug} className="relative h-16 w-16 rounded-full border-2 border-white/20 object-cover" />
+                    <img src={provider.photoUrl ?? providerAvatar(provider.slug)} alt={provider.title ?? provider.slug} className="relative h-16 w-16 rounded-full border-2 border-white/20 object-cover" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <h3 className="text-lg font-bold">{provider.title ?? "خدمت‌دهنده"}</h3>
@@ -118,7 +119,7 @@ export default async function LinePage({
                   <Link href={`/s/${salon.slug}/provider/${provider.slug}`} className="btn-outline px-4 py-2 text-sm">پروفایل و نمونه‌کار</Link>
                 </div>
                 {provider.portfolios.length > 0 && (
-                  <div className="mt-4 grid grid-cols-4 gap-2.5">
+                  <div className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
                     {provider.portfolios.map((pf) => (
                       <div key={pf.id} className="group aspect-[3/4] overflow-hidden rounded-xl border border-white/10">
                         {/* eslint-disable-next-line @next/next/no-img-element */}

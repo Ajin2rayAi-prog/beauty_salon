@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Wordmark } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { providerAvatar } from "@/lib/images";
 import { CalendarHeart, ArrowRight, Instagram, Camera } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +64,7 @@ export default async function ProviderProfilePage({
             <div className="relative shrink-0">
               <div className="absolute -inset-2 rounded-[2rem] bg-rose-gradient opacity-70 blur-md" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={provider.photoUrl ?? `https://picsum.photos/seed/${provider.slug}/300/300`} alt={provider.title ?? provider.slug} className="relative h-28 w-28 rounded-3xl border-2 border-white/20 object-cover" />
+              <img src={provider.photoUrl ?? providerAvatar(provider.slug)} alt={provider.title ?? provider.slug} className="relative h-28 w-28 rounded-3xl border-2 border-white/20 object-cover" />
             </div>
             <div className="min-w-0 flex-1">
               <span className="eyebrow"><Camera size={13} /> پروفایل متخصص</span>

@@ -18,6 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/providers", label: "خدمت‌دهنده‌ها", icon: "Users" },
     { href: "/admin/appointments", label: "نوبت‌ها", icon: "CalendarClock" },
     { href: "/admin/finance", label: "گزارش مالی", icon: "Wallet" },
+    { href: "/admin/content", label: "محتوای سایت", icon: "FileText" },
     { href: "/admin/notifications", label: "اعلان‌ها", icon: "Bell" },
     { href: "/admin/settings", label: "تنظیمات سالن", icon: "Settings" },
   ];
