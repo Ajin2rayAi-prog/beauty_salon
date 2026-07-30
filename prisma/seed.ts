@@ -13,26 +13,32 @@ async function hash(pw: string) {
   return bcrypt.hash(pw, 10);
 }
 
-// Real, beauty-relevant sample imagery via loremflickr's keyword endpoint
-// (deterministic through `lock`). Mirrors src/lib/images.ts — inlined here so
-// the seed script has no path-alias import dependency.
-const LINE_KW: Record<string, string> = {
-  facial: "facial,spa,skincare",
-  nails: "manicure,nails",
-  makeup: "makeup,cosmetics",
-  haircolor: "hairsalon,haircolor",
-  lashes: "eyelash,eye",
-  brows: "eyebrow,makeup",
+// Real, subject-verified sample imagery. Mirrors src/lib/images.ts (each photo
+// id was downloaded and visually confirmed to match its category) — inlined
+// here so the seed script has no path-alias import dependency. Provider photos
+// use pravatar (real female portraits), portfolios use the verified pools.
+const IMAGE_BANK: Record<string, string[]> = {
+  facial: ["1570172619644-dfd03ed5d881", "1512290923902-8a9f81dc236c", "1616394584738-fc6e612e71b9", "1631730359585-38a4935cbec4"],
+  nails: ["1604654894610-df63bc536371", "1610992015732-2449b76344bc", "1632345031435-8727f6897d53", "1522337660859-02fbefca4702", "1583001931096-959e9a1a6223"],
+  makeup: ["1503236823255-94609f598e71", "1596462502278-27bfdc403348", "1516975080664-ed2fc6a32937"],
+  haircolor: ["1595476108010-b4d1f102b1b1", "1562322140-8baeececf3df", "1560869713-7d0a29430803"],
+  lashes: ["1620331311520-246422fd82f9", "1503236823255-94609f598e71"],
+  brows: ["1487412720507-e7ab37603c6f", "1516975080664-ed2fc6a32937"],
 };
-function lockOf(seed: string): number {
+const AVATAR_IDS = [5, 9, 12, 16, 20, 24, 25, 30, 44, 45, 47, 49];
+function seedHash(seed: string): number {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) & 0xffff;
-  return (h % 900) + 1;
+  return h;
 }
+const unsplashImg = (id: string, w: number, h: number) =>
+  `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&q=80&auto=format`;
 const avatarImg = (seed: string) =>
-  `https://loremflickr.com/400/400/woman,portrait,beauty/?lock=${lockOf("av-" + seed)}`;
-const portfolioImg = (lineSlug: string, seed: string) =>
-  `https://loremflickr.com/600/800/${encodeURIComponent(LINE_KW[lineSlug] ?? "salon,beauty")}/?lock=${lockOf(`pf-${lineSlug}-${seed}`)}`;
+  `https://i.pravatar.cc/400?img=${AVATAR_IDS[seedHash("av-" + seed) % AVATAR_IDS.length]}`;
+const portfolioImg = (lineSlug: string, seed: string) => {
+  const pool = IMAGE_BANK[lineSlug] ?? IMAGE_BANK.facial;
+  return unsplashImg(pool[seedHash(`pf-${lineSlug}-${seed}`) % pool.length], 600, 800);
+};
 
 async function main() {
   // ── PLATFORM owner ──────────────────────────────────────────────────────

@@ -89,9 +89,10 @@ export default function LoginClient() {
         </p>
 
         <div className="mt-5 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3.5 text-[11px] leading-5 text-white/45">
-          <p className="mb-1 font-bold text-white/60">حساب‌های دمو (seed):</p>
-          <p>مدیریت سالن: <span dir="ltr" className="text-white/70">admin@kia.local</span> / <span dir="ltr" className="text-white/70">Kia@123</span></p>
-          <p>خدمت‌دهنده: <span dir="ltr" className="text-white/70">sara@kia.local</span> / <span dir="ltr" className="text-white/70">Kia@123</span></p>
+          <p className="mb-1 font-bold text-white/60">حساب‌های دمو — رمز همه: <span dir="ltr" className="text-rose-300">1234</span></p>
+          <p>مدیریت سالن: <span dir="ltr" className="text-white/70">admin@kia.local</span></p>
+          <p>خدمت‌دهنده: <span dir="ltr" className="text-white/70">sara@kia.local</span></p>
+          <p>مدیریت پلتفرم: <span dir="ltr" className="text-white/70">platform@salon.local</span></p>
         </div>
       </div>
     </div>
