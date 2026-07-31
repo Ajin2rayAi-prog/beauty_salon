@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Loader2, LogIn, Sparkles } from "lucide-react";
+import { Loader2, LogIn, Sparkles, ArrowRight } from "lucide-react";
 import { Wordmark } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -32,6 +32,9 @@ export default function LoginClient() {
   return (
     <div className="relative grid min-h-screen place-items-center overflow-hidden px-4 py-12">
       <div className="absolute left-4 top-4 z-10"><ThemeToggle /></div>
+      <Link href="/" className="btn-ghost absolute right-4 top-4 z-10 px-3 py-2 text-sm">
+        <ArrowRight size={15} /> بازگشت به سایت
+      </Link>
       <div className="blob animate-float -top-24 right-1/4 h-72 w-72 bg-rose-500/25" />
       <div className="blob animate-float delay-3 -bottom-24 left-1/4 h-72 w-72 bg-plum-500/25" />
       <div className="blob animate-float delay-5 top-1/3 left-0 h-56 w-56 bg-sky-500/20" />

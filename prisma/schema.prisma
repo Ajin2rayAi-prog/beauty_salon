@@ -166,7 +166,8 @@ model ProviderLine {
   @@unique([providerId, lineId])
 }
 
-// Portfolio = نمونه‌کار, attached to a specific line
+// Portfolio = نمونه‌کار, attached to a specific line. Displayed as an
+// Instagram-style post (caption + likes + comments) on the provider page.
 model ProviderPortfolio {
   id         String   @id @default(cuid())
   providerId String
@@ -175,9 +176,25 @@ model ProviderPortfolio {
   line       Line?    @relation(fields: [lineId], references: [id], onDelete: SetNull)
   imageUrl   String
   caption    String?
+  likes      Int      @default(0) // public like counter (anonymous, cookie-guarded client-side)
   createdAt  DateTime @default(now())
 
+  comments   PortfolioComment[]
+
   @@index([providerId])
+}
+
+// A public comment on a portfolio post (Instagram-style). Posted immediately;
+// the provider/salon can delete any comment (moderation after the fact).
+model PortfolioComment {
+  id          String   @id @default(cuid())
+  portfolioId String
+  portfolio   ProviderPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  authorName  String
+  text        String
+  createdAt   DateTime @default(now())
+
+  @@index([portfolioId])
 }
 
 // Weekly recurring working slots, set by the PROVIDER themselves.

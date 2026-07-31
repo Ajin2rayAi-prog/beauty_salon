@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { providerAvatar } from "@/lib/images";
 import { getSalonEntitlements } from "@/lib/entitlements";
 import { ReviewForm } from "../../ReviewForm";
+import { PortfolioFeed } from "./PortfolioFeed";
 import { CalendarHeart, ArrowRight, Instagram, Camera, Star } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,13 @@ export default async function ProviderProfilePage({
     include: {
       user: { select: { name: true } },
       lines: { include: { line: true } },
-      portfolios: { orderBy: { createdAt: "desc" } },
+      portfolios: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          line: { select: { id: true, name: true } },
+          comments: { orderBy: { createdAt: "asc" } },
+        },
+      },
     },
   });
   if (!provider || !provider.active) notFound();
@@ -43,22 +50,9 @@ export default async function ProviderProfilePage({
     ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10
     : null;
 
-  // Group portfolios by line (key requirement: نمونه‌کار به‌تفکیک هر لاین)
-  const byLine = new Map<string, { lineName: string; lineSlug: string; items: typeof provider.portfolios }>();
-  const general: typeof provider.portfolios = [];
-
-  for (const pf of provider.portfolios) {
-    if (pf.lineId) {
-      const pl = provider.lines.find((l) => l.lineId === pf.lineId);
-      const key = pf.lineId;
-      if (!byLine.has(key)) {
-        byLine.set(key, { lineName: pl?.line.name ?? "لاین", lineSlug: pl?.line.slug ?? "", items: [] });
-      }
-      byLine.get(key)!.items.push(pf);
-    } else {
-      general.push(pf);
-    }
-  }
+  const posts = JSON.parse(JSON.stringify(provider.portfolios));
+  const providerPhoto = provider.photoUrl ?? providerAvatar(provider.slug);
+  const providerName = provider.user?.name ?? provider.title ?? "خدمت‌دهنده";
 
   return (
     <div className="relative min-h-screen">
@@ -103,55 +97,21 @@ export default async function ProviderProfilePage({
           </div>
         </div>
 
-        {/* Portfolio per line */}
-        {byLine.size === 0 && general.length === 0 ? (
-          <div className="card mt-10 p-12 text-center">
-            <Camera size={32} className="mx-auto text-white/30" />
-            <p className="mt-3 text-white/45">هنوز نمونه‌کاری ثبت نشده است.</p>
+        {/* Portfolio — Instagram-style feed (caption + likes + comments) */}
+        <section className="mt-12">
+          <div className="mb-5 flex items-center gap-3">
+            <span className="eyebrow"><Camera size={13} /> نمونه‌کارها</span>
+            <span className="badge text-[11px]">{provider.portfolios.length} پست</span>
           </div>
-        ) : (
-          <div className="mt-12 space-y-12">
-            {[...byLine.entries()].map(([lineId, group]) => (
-              <section key={lineId}>
-                <div className="mb-5 flex items-center gap-3">
-                  <span className="eyebrow"><Camera size={13} /> نمونه‌کار</span>
-                  <h2 className="text-2xl font-black text-gradient">{group.lineName}</h2>
-                  <span className="badge text-[11px]">{group.items.length} نمونه</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {group.items.map((pf, i) => (
-                    <figure key={pf.id} className="card group overflow-hidden p-0 animate-fade-up" style={{ animationDelay: `${i * 0.04}s` }}>
-                      <div className="aspect-[3/4] overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={pf.imageUrl} alt={pf.caption ?? ""} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
-                      </div>
-                      {pf.caption && (
-                        <figcaption className="p-3 text-xs leading-5 text-white/55">{pf.caption}</figcaption>
-                      )}
-                    </figure>
-                  ))}
-                </div>
-              </section>
-            ))}
-
-            {general.length > 0 && (
-              <section>
-                <h2 className="mb-5 text-2xl font-black text-gradient">نمونه‌کارهای عمومی</h2>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {general.map((pf, i) => (
-                    <figure key={pf.id} className="card group overflow-hidden p-0 animate-fade-up" style={{ animationDelay: `${i * 0.04}s` }}>
-                      <div className="aspect-[3/4] overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={pf.imageUrl} alt={pf.caption ?? ""} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
-                      </div>
-                      {pf.caption && <figcaption className="p-3 text-xs leading-5 text-white/55">{pf.caption}</figcaption>}
-                    </figure>
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
-        )}
+          {posts.length === 0 ? (
+            <div className="card p-12 text-center">
+              <Camera size={32} className="mx-auto text-white/30" />
+              <p className="mt-3 text-white/45">هنوز پستی منتشر نشده است.</p>
+            </div>
+          ) : (
+            <PortfolioFeed providerName={providerName} providerPhoto={providerPhoto} initialPosts={posts} />
+          )}
+        </section>
 
         {/* Reviews for this provider (moderated by the salon manager) */}
         {showReviews && (

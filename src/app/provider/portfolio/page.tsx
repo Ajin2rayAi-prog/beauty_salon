@@ -9,8 +9,15 @@ export default async function ProviderPortfolioPage() {
   const provider = await prisma.provider.findUnique({
     where: { userId: user.id },
     include: {
+      user: { select: { name: true } },
       lines: { include: { line: { select: { id: true, name: true } } } },
-      portfolios: { orderBy: { createdAt: "desc" }, include: { line: { select: { id: true, name: true } } } },
+      portfolios: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          line: { select: { id: true, name: true } },
+          comments: { orderBy: { createdAt: "asc" } },
+        },
+      },
     },
   });
   if (!provider) throw new Error("پروفایل پیدا نشد");
@@ -27,6 +34,8 @@ export default async function ProviderPortfolioPage() {
       </div>
       <PortfolioClient
         providerId={provider.id}
+        providerName={provider.user?.name ?? provider.title ?? "خدمت‌دهنده"}
+        providerPhoto={provider.photoUrl}
         lines={provider.lines.map((pl) => pl.line)}
         initialItems={JSON.parse(JSON.stringify(provider.portfolios))}
       />
