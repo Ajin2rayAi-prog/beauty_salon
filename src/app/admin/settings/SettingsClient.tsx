@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Save, Loader2, Settings as SettingsIcon } from "lucide-react";
+import { Save, Loader2, Settings as SettingsIcon, UserCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { PhotoField } from "@/components/PhotoField";
 
 type Salon = {
   id: string; name: string; description: string | null; address: string | null;
@@ -10,13 +11,35 @@ type Salon = {
   logoUrl: string | null; coverUrl: string | null; active: boolean;
 };
 
-export function SettingsClient({ salon }: { salon: Salon }) {
+export function SettingsClient({ salon, admin }: { salon: Salon; admin: { name: string; avatar: string } }) {
   const [form, setForm] = useState({
     name: salon.name, description: salon.description ?? "", address: salon.address ?? "",
     phone: salon.phone ?? "", city: salon.city ?? "", openTime: salon.openTime, closeTime: salon.closeTime,
     logoUrl: salon.logoUrl ?? "", coverUrl: salon.coverUrl ?? "",
   });
   const [saving, setSaving] = useState(false);
+
+  // Manager's own photo (shown in the site hero slideshow).
+  const [avatar, setAvatar] = useState(admin.avatar ?? "");
+  const [savingAvatar, setSavingAvatar] = useState(false);
+
+  async function saveAvatar() {
+    setSavingAvatar(true);
+    try {
+      const res = await fetch("/api/admin/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "خطا");
+      toast.success("عکس مدیر ذخیره شد");
+    } catch (err: any) {
+      toast.error(err.message || "خطا در ذخیره عکس");
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -38,7 +61,20 @@ export function SettingsClient({ salon }: { salon: Salon }) {
   }
 
   return (
-    <form onSubmit={save} className="card-glow relative max-w-3xl space-y-5 overflow-hidden p-6 animate-fade-up">
+    <div className="space-y-6">
+      <div className="card-glow relative max-w-3xl overflow-hidden p-6 animate-fade-up">
+        <div className="blob -right-10 -top-12 h-44 w-44 bg-rose-500/15" />
+        <div className="relative">
+          <span className="eyebrow"><UserCircle size={14} /> عکس مدیر</span>
+          <p className="mt-2 mb-4 text-sm text-white/55">این عکس در اسلایدشوی صفحهٔ اصلی سایت شما (به‌عنوان «مدیریت سالن») نمایش داده می‌شود.</p>
+          <PhotoField value={avatar} onChange={setAvatar} shape="circle" />
+          <button onClick={saveAvatar} disabled={savingAvatar} className="btn-rose mt-4 px-5 py-2.5 text-sm">
+            {savingAvatar ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} ذخیره عکس مدیر
+          </button>
+        </div>
+      </div>
+
+      <form onSubmit={save} className="card-glow relative max-w-3xl space-y-5 overflow-hidden p-6 animate-fade-up">
       <div className="blob -left-10 -bottom-12 h-44 w-44 bg-plum-500/15" />
       <div className="relative grid gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2"><label className="label">نام سالن</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input mt-1.5" /></div>
@@ -55,5 +91,6 @@ export function SettingsClient({ salon }: { salon: Salon }) {
         {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} ذخیره تنظیمات
       </button>
     </form>
+    </div>
   );
 }

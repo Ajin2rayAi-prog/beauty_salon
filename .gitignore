@@ -35,3 +35,6 @@ next-env.d.ts
 
 # local db backups
 backups/
+
+# runtime image uploads (local fallback dir)
+.uploads/

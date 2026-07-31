@@ -20,7 +20,10 @@ export default async function AdminSettingsPage() {
         </h1>
         <p className="mt-2 text-sm text-white/55">اطلاعات عمومی، ساعات کاری و مشخصات سالن.</p>
       </div>
-      <SettingsClient salon={JSON.parse(JSON.stringify(salon))} />
+      <SettingsClient
+        salon={JSON.parse(JSON.stringify(salon))}
+        admin={{ name: user.name ?? "", avatar: user.avatar ?? "" }}
+      />
     </div>
   );
 }

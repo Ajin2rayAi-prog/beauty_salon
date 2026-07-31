@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/Badge";
-import { Users, Plus, Loader2, X, Instagram, ToggleLeft, ToggleRight, Scissors } from "lucide-react";
+import { Users, Plus, Loader2, X, Instagram, ToggleLeft, ToggleRight, Scissors, Camera, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { providerAvatar } from "@/lib/images";
+import { PhotoField } from "@/components/PhotoField";
 
 type LineOpt = { id: string; name: string };
 type Provider = {
@@ -21,6 +22,36 @@ export function ProvidersClient({ initialProviders, lines }: { initialProviders:
   const [busy, setBusy] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "1234", title: "", slug: "", lineIds: [] as string[] });
+
+  // Per-provider photo editing (upload from device or paste a URL).
+  const [editingPhoto, setEditingPhoto] = useState<string | null>(null);
+  const [photoDraft, setPhotoDraft] = useState("");
+  const [savingPhoto, setSavingPhoto] = useState(false);
+
+  function openPhotoEditor(p: Provider) {
+    setEditingPhoto(p.id);
+    setPhotoDraft(p.photoUrl ?? "");
+  }
+
+  async function savePhoto(p: Provider) {
+    setSavingPhoto(true);
+    try {
+      const res = await fetch(`/api/admin/providers/${p.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoUrl: photoDraft }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "خطا");
+      setProviders((ps) => ps.map((x) => (x.id === p.id ? { ...x, photoUrl: photoDraft || null } : x)));
+      setEditingPhoto(null);
+      toast.success("عکس به‌روزرسانی شد");
+    } catch (err: any) {
+      toast.error(err.message || "خطا در ذخیره عکس");
+    } finally {
+      setSavingPhoto(false);
+    }
+  }
 
   function toggleLine(id: string) {
     setForm((f) => ({ ...f, lineIds: f.lineIds.includes(id) ? f.lineIds.filter((x) => x !== id) : [...f.lineIds, id] }));
@@ -109,10 +140,19 @@ export function ProvidersClient({ initialProviders, lines }: { initialProviders:
             style={{ animationDelay: `${i * 0.06}s` }}
           >
             <div className="flex items-center gap-3">
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 border-rose-400/30">
+              <button
+                type="button"
+                onClick={() => (editingPhoto === p.id ? setEditingPhoto(null) : openPhotoEditor(p))}
+                className="group/av relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 border-rose-400/30"
+                aria-label="تغییر عکس"
+                title="تغییر عکس"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.photoUrl ?? providerAvatar(p.slug)} alt={p.title ?? p.slug} className="h-full w-full object-cover" />
-              </div>
+                <span className="absolute inset-0 grid place-items-center bg-black/45 text-white opacity-0 transition group-hover/av:opacity-100">
+                  <Camera size={16} />
+                </span>
+              </button>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="truncate font-bold">{p.title ?? "خدمت‌دهنده"}</h3>
@@ -122,6 +162,18 @@ export function ProvidersClient({ initialProviders, lines }: { initialProviders:
                 {p.instagram && <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-plum-300"><Instagram size={11} /> {p.instagram}</p>}
               </div>
             </div>
+
+            {editingPhoto === p.id && (
+              <div className="mt-3 rounded-xl border border-rose-400/20 bg-rose-400/[0.04] p-3 animate-fade-up">
+                <PhotoField value={photoDraft} onChange={setPhotoDraft} shape="square" label="عکس خدمت‌دهنده" />
+                <div className="mt-3 flex gap-2">
+                  <button onClick={() => savePhoto(p)} disabled={savingPhoto} className="btn-rose px-3 py-1.5 text-xs">
+                    {savingPhoto ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} ذخیره عکس
+                  </button>
+                  <button onClick={() => setEditingPhoto(null)} className="btn-ghost px-3 py-1.5 text-xs"><X size={14} /> انصراف</button>
+                </div>
+              </div>
+            )}
             <div className="mt-3 flex flex-wrap gap-1.5">
               {p.lines.map((pl) => (
                 <span key={pl.lineId} className="badge text-[10px]"><Scissors size={10} className="ml-1" /> {pl.line.name}</span>
