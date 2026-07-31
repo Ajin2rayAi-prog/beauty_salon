@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatPrice, formatNumber, toJalali } from "@/lib/utils";
 import { providerAvatar } from "@/lib/images";
-import { Scissors, Users, CalendarDays, Clock, CreditCard, Store, Check, Loader2, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Scissors, Users, CalendarDays, Clock, CreditCard, Store, Check, Loader2, ChevronRight, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 
 type Service = { id: string; name: string; durationMin: number; price: number };
@@ -63,13 +63,12 @@ export function BookingClient({
   const lineProviders = providers.filter((p) => !lineId || p.lines.some((pl) => pl.lineId === lineId));
   const provider = providers.find((p) => p.id === providerId);
 
-  // wizard: user walks one step at a time (no long scroll)
+  // wizard: user walks one step at a time; forward is automatic on selection
   const [current, setCurrent] = useState(0);
-  const stepValid = [!!lineId, !!serviceId, !!providerId, !!(date && time), true];
-  const canNext = stepValid[current];
 
-  function goNext() {
-    if (canNext && current < STEPS.length - 1) setCurrent((c) => c + 1);
+  // advance to the next step shortly after a selection (so the highlight is visible first)
+  function advanceAfter(next: number) {
+    window.setTimeout(() => setCurrent((c) => (c < next ? next : c)), 220);
   }
   function goBack() {
     if (current > 0) setCurrent((c) => c - 1);
@@ -156,7 +155,7 @@ export function BookingClient({
         <Section icon={<Scissors size={18} />} title="۱. انتخاب لاین" done={!!lineId}>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {lines.map((l) => (
-              <button key={l.id} onClick={() => setLineId(l.id)}
+              <button key={l.id} onClick={() => { setLineId(l.id); advanceAfter(1); }}
                 className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition ${lineId === l.id ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08] hover:border-white/20"}`}>
                 <span className="text-2xl">{lineIcons[l.icon ?? ""] ?? "💫"}</span>
                 <span className="text-sm font-semibold">{l.name}</span>
@@ -171,7 +170,7 @@ export function BookingClient({
           <Section icon={<Sparkles size={18} />} title="۲. انتخاب خدمت" done={!!serviceId}>
             <div className="grid gap-2.5">
               {line?.services.map((s) => (
-                <button key={s.id} onClick={() => setServiceId(s.id)}
+                <button key={s.id} onClick={() => { setServiceId(s.id); advanceAfter(2); }}
                   className={`flex items-center justify-between rounded-2xl border p-4 text-right transition ${serviceId === s.id ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08] hover:border-white/20"}`}>
                   <span>
                     <span className="font-semibold">{s.name}</span>
@@ -189,7 +188,7 @@ export function BookingClient({
           <Section icon={<Users size={18} />} title="۳. انتخاب خدمت‌دهنده" done={!!providerId}>
             <div className="grid gap-2.5 sm:grid-cols-2">
               {lineProviders.map((p) => (
-                <button key={p.id} onClick={() => setProviderId(p.id)}
+                <button key={p.id} onClick={() => { setProviderId(p.id); advanceAfter(3); }}
                   className={`flex items-center gap-3 rounded-2xl border p-4 text-right transition ${providerId === p.id ? "border-rose-400/60 bg-rose-500/15 shadow-[0_10px_30px_-14px_rgba(255,77,151,0.7)]" : "border-white/[0.08] hover:border-white/20"}`}>
                   <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -230,7 +229,7 @@ export function BookingClient({
                   ) : (
                     <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
                       {slots.map((t) => (
-                        <button key={t} onClick={() => setTime(t)}
+                        <button key={t} onClick={() => { setTime(t); advanceAfter(4); }}
                           className={`rounded-lg border py-2 text-sm font-semibold transition ${time === t ? "border-rose-400/50 bg-rose-400/20 text-rose-200" : "border-white/[0.08] text-white/70 hover:border-white/20"}`}>
                           {t}
                         </button>
@@ -277,7 +276,7 @@ export function BookingClient({
           </Section>
         )}
 
-        {/* wizard navigation */}
+        {/* wizard navigation — forward is automatic on selection; only "back" is manual */}
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -288,18 +287,11 @@ export function BookingClient({
             <ChevronRight size={16} /> مرحله قبل
           </button>
 
-          {current < STEPS.length - 1 ? (
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={!canNext}
-              className="btn-rose px-6 py-2.5 text-sm"
-            >
-              مرحله بعد <ChevronLeft size={16} />
-            </button>
-          ) : (
-            <span className="text-xs text-white/45">برای نهایی‌کردن، دکمه‌ی ثبت را بزنید</span>
-          )}
+          <span className="text-xs text-white/45">
+            {current < STEPS.length - 1
+              ? "با انتخاب هر گزینه، خودکار به مرحله بعد می‌روید"
+              : "برای نهایی‌کردن، دکمه‌ی ثبت را بزنید"}
+          </span>
         </div>
       </div>
 
