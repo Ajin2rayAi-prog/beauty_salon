@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Heart, MessageCircle, Send, Loader2, Camera } from "lucide-react";
+import { Heart, MessageCircle, Send, Loader2, Camera, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { toJalali } from "@/lib/utils";
 
@@ -23,6 +23,7 @@ export function PortfolioFeed({
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [filter, setFilter] = useState<string>("all");
   const [guestName, setGuestName] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
 
   // restore per-visitor like state + saved name from localStorage
   useEffect(() => {
@@ -33,6 +34,13 @@ export function PortfolioFeed({
     } catch { /* ignore */ }
   }, []);
 
+  // lock body scroll while a post is open
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.style.overflow = openId ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [openId]);
+
   const lineTags = useMemo(() => {
     const map = new Map<string, string>();
     posts.forEach((p) => { if (p.line) map.set(p.line.id, p.line.name); });
@@ -40,11 +48,12 @@ export function PortfolioFeed({
   }, [posts]);
 
   const shown = filter === "all" ? posts : posts.filter((p) => p.line?.id === filter);
+  const openPost = openId ? posts.find((p) => p.id === openId) ?? null : null;
 
   function persistLiked(next: Record<string, boolean>) {
     try { localStorage.setItem(LIKED_KEY, JSON.stringify(Object.keys(next).filter((k) => next[k]))); } catch { /* ignore */ }
   }
-  // PLACEHOLDER_LOGIC
+
   async function toggleLike(post: Post) {
     const isLiked = !!liked[post.id];
     const nextLiked = { ...liked, [post.id]: !isLiked };
@@ -60,6 +69,10 @@ export function PortfolioFeed({
       const data = await res.json();
       if (res.ok) setPosts((list) => list.map((p) => (p.id === post.id ? { ...p, likes: data.likes } : p)));
     } catch { /* keep optimistic value */ }
+  }
+
+  function onCommented(postId: string, c: Comment) {
+    setPosts((list) => list.map((x) => (x.id === postId ? { ...x, comments: [...x.comments, c] } : x)));
   }
 
   return (
@@ -79,16 +92,38 @@ export function PortfolioFeed({
           <p className="mt-3">پستی برای نمایش نیست.</p>
         </div>
       ) : (
-        <div className="mx-auto max-w-md space-y-6">
+        // Instagram-style profile grid: 4 across on desktop, no vertical feed.
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2.5 lg:grid-cols-4">
           {shown.map((p) => (
-            <PostCard
-              key={p.id} post={p} providerName={providerName} providerPhoto={providerPhoto}
-              liked={!!liked[p.id]} onLike={() => toggleLike(p)}
-              guestName={guestName} setGuestName={setGuestName}
-              onCommented={(c) => setPosts((list) => list.map((x) => (x.id === p.id ? { ...x, comments: [...x.comments, c] } : x)))}
-            />
+            <button
+              key={p.id} type="button" onClick={() => setOpenId(p.id)}
+              className="group relative aspect-square overflow-hidden rounded-xl bg-black/20 focus:outline-none focus:ring-2 focus:ring-rose-400/70"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.imageUrl} alt={p.caption ?? ""} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" loading="lazy" />
+              {/* hover overlay with like + comment counts (desktop) */}
+              <span className="absolute inset-0 flex items-center justify-center gap-5 bg-black/45 text-sm font-bold text-white opacity-0 transition group-hover:opacity-100">
+                <span className="flex items-center gap-1.5"><Heart size={18} className="fill-white" /> {p.likes.toLocaleString("fa-IR")}</span>
+                <span className="flex items-center gap-1.5"><MessageCircle size={18} className="fill-white" /> {p.comments.length.toLocaleString("fa-IR")}</span>
+              </span>
+              {p.comments.length > 0 && (
+                <span className="absolute bottom-1.5 left-1.5 grid h-6 w-6 place-items-center rounded-full bg-black/55 text-white sm:hidden">
+                  <MessageCircle size={13} />
+                </span>
+              )}
+            </button>
           ))}
         </div>
+      )}
+
+      {openPost && (
+        <PostModal
+          post={openPost} providerName={providerName} providerPhoto={providerPhoto}
+          liked={!!liked[openPost.id]} onLike={() => toggleLike(openPost)}
+          guestName={guestName} setGuestName={setGuestName}
+          onCommented={(c) => onCommented(openPost.id, c)}
+          onClose={() => setOpenId(null)}
+        />
       )}
     </div>
   );
@@ -102,15 +137,21 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
     </button>
   );
 }
-// PLACEHOLDER_CARD
-function PostCard({
-  post, providerName, providerPhoto, liked, onLike, guestName, setGuestName, onCommented,
+function PostModal({
+  post, providerName, providerPhoto, liked, onLike, guestName, setGuestName, onCommented, onClose,
 }: {
   post: Post; providerName: string; providerPhoto: string; liked: boolean; onLike: () => void;
-  guestName: string; setGuestName: (v: string) => void; onCommented: (c: Comment) => void;
+  guestName: string; setGuestName: (v: string) => void; onCommented: (c: Comment) => void; onClose: () => void;
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+
+  // close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -132,40 +173,61 @@ function PostCard({
   }
 
   return (
-    <article className="card overflow-hidden p-0">
-      <div className="flex items-center gap-3 p-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={providerPhoto} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-rose-400/40" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold">{providerName}</p>
-          {post.line && <p className="text-[11px] text-white/45">{post.line.name}</p>}
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm animate-fade-up sm:p-6" onClick={onClose}>
+      <div
+        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#150b1f] shadow-2xl md:flex-row"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button onClick={onClose} aria-label="بستن" className="absolute left-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white/80 transition hover:bg-black/70 hover:text-white">
+          <X size={17} />
+        </button>
+
+        {/* image */}
+        <div className="aspect-square w-full shrink-0 bg-black/30 md:aspect-auto md:w-[55%]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={post.imageUrl} alt={post.caption ?? ""} className="h-full w-full object-cover" />
+        </div>
+
+        {/* details */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex items-center gap-3 border-b border-white/[0.06] p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={providerPhoto} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-rose-400/40" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold">{providerName}</p>
+              {post.line && <p className="text-[11px] text-white/45">{post.line.name}</p>}
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+            {post.caption && (
+              <p className="text-sm leading-6"><b className="font-bold">{providerName}</b>{" "}<span className="text-white/80">{post.caption}</span></p>
+            )}
+            {post.comments.length === 0 ? (
+              <p className="text-[12px] text-white/35">هنوز دیدگاهی ثبت نشده — اولین نفر باشید.</p>
+            ) : post.comments.map((c) => (
+              <p key={c.id} className="text-sm leading-6"><b className="font-bold">{c.authorName}</b>{" "}<span className="text-white/75">{c.text}</span></p>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4 border-t border-white/[0.06] px-3 pt-3 text-sm">
+            <button onClick={onLike} className="flex items-center gap-1.5 transition active:scale-90" aria-label="لایک">
+              <Heart size={22} className={liked ? "fill-rose-500 text-rose-500" : "text-white/70 hover:text-rose-300"} />
+              {post.likes.toLocaleString("fa-IR")}
+            </button>
+            <span className="flex items-center gap-1.5 text-white/70"><MessageCircle size={20} /> {post.comments.length.toLocaleString("fa-IR")}</span>
+            <span className="mr-auto text-[11px] text-white/40">{toJalali(post.createdAt)}</span>
+          </div>
+
+          <form onSubmit={submit} className="flex items-center gap-2 p-3">
+            <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="نام" className="input w-24 py-2 text-xs" />
+            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="دیدگاه بگذارید…" className="input flex-1 py-2 text-xs" />
+            <button disabled={sending || !text.trim()} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rose-gradient text-white disabled:opacity-40" aria-label="ارسال">
+              {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+            </button>
+          </form>
         </div>
       </div>
-      <div className="aspect-square overflow-hidden bg-black/20">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={post.imageUrl} alt={post.caption ?? ""} className="h-full w-full object-cover" />
-      </div>
-      <div className="flex items-center gap-4 px-3 pt-3 text-sm">
-        <button onClick={onLike} className="flex items-center gap-1.5 transition active:scale-90" aria-label="لایک">
-          <Heart size={20} className={liked ? "fill-rose-500 text-rose-500" : "text-white/70 hover:text-rose-300"} />
-          {post.likes.toLocaleString("fa-IR")}
-        </button>
-        <span className="flex items-center gap-1.5 text-white/70"><MessageCircle size={19} /> {post.comments.length.toLocaleString("fa-IR")}</span>
-        <span className="mr-auto text-[11px] text-white/40">{toJalali(post.createdAt)}</span>
-      </div>
-      {post.caption && <p className="px-3 pt-2 text-sm leading-6"><b className="font-bold">{providerName}</b>{" "}<span className="text-white/80">{post.caption}</span></p>}
-      <div className="space-y-2 px-3 py-3">
-        {post.comments.map((c) => (
-          <p key={c.id} className="text-sm leading-6"><b className="font-bold">{c.authorName}</b>{" "}<span className="text-white/75">{c.text}</span></p>
-        ))}
-      </div>
-      <form onSubmit={submit} className="flex items-center gap-2 border-t border-white/[0.06] p-3">
-        <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="نام" className="input w-24 py-2 text-xs" />
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="دیدگاه بگذارید…" className="input flex-1 py-2 text-xs" />
-        <button disabled={sending || !text.trim()} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rose-gradient text-white disabled:opacity-40" aria-label="ارسال">
-          {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-        </button>
-      </form>
-    </article>
+    </div>
   );
 }
