@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Clock, MapPin, Users, CalendarHeart, Sparkles } from "lucide-react";
+import { Clock, MapPin, Users, CalendarHeart, Sparkles, ChevronRight, ChevronLeft } from "lucide-react";
 
 export type HeroSlide = {
   photo: string;
@@ -38,6 +38,7 @@ export function HeroSlider({ slides, salonName, eyebrow, tagline, openTime, clos
   }, [count, paused]);
 
   const current = slides[active];
+  const go = (dir: number) => setActive((i) => (i + dir + count) % count);
 
   return (
     <section
@@ -59,6 +60,7 @@ export function HeroSlider({ slides, salonName, eyebrow, tagline, openTime, clos
             alt={`${s.name} — ${s.role}`}
             className="h-full w-full object-cover"
             style={{
+              objectPosition: "center 22%",
               transform: i === active ? "scale(1.08)" : "scale(1)",
               transition: `transform ${INTERVAL + 1500}ms linear`,
             }}
@@ -85,6 +87,26 @@ export function HeroSlider({ slides, salonName, eyebrow, tagline, openTime, clos
       </div>
 
       <div className="flex-1" />
+
+      {/* Prev / next arrows (RTL: right arrow = previous person, left = next) */}
+      {count > 1 && (
+        <>
+          <button
+            onClick={() => go(1)}
+            aria-label="عکس بعدی"
+            className="glass absolute right-4 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-white/80 transition hover:scale-105 hover:bg-white/15 hover:text-white active:scale-95 sm:right-6"
+          >
+            <ChevronRight size={22} />
+          </button>
+          <button
+            onClick={() => go(-1)}
+            aria-label="عکس قبلی"
+            className="glass absolute left-4 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-white/80 transition hover:scale-105 hover:bg-white/15 hover:text-white active:scale-95 sm:left-6"
+          >
+            <ChevronLeft size={22} />
+          </button>
+        </>
+      )}
 
       {/* Bottom: the changing person caption + booking CTA + slide dots */}
       <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-10">

@@ -116,13 +116,13 @@ export default async function SalonPage({ params }: { params: { salonSlug: strin
   // under each name is their job title, or the lines they work in.
   const heroSlides: HeroSlide[] = [
     ...managers.map((m) => ({
-      photo: m.avatar || providerAvatar("mgr-" + m.id),
+      photo: m.avatar || providerAvatar("mgr-" + m.id, 1000),
       name: m.name,
       role: "مدیریت سالن",
       badge: "مدیریت",
     })),
     ...salon.providers.map((p) => ({
-      photo: p.photoUrl ?? providerAvatar(p.slug),
+      photo: p.photoUrl ?? providerAvatar(p.slug, 1000),
       name: p.user?.name || p.title || "خدمت‌دهنده",
       role: p.title || p.lines.map((pl) => pl.line.name).join(" • ") || "خدمت‌دهنده",
       badge: p.lines[0]?.line.name,
