@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatPrice, formatNumber, toJalali } from "@/lib/utils";
 import { providerAvatar } from "@/lib/images";
@@ -63,8 +63,16 @@ export function BookingClient({
   const lineProviders = providers.filter((p) => !lineId || p.lines.some((pl) => pl.lineId === lineId));
   const provider = providers.find((p) => p.id === providerId);
 
-  // wizard: user walks one step at a time; forward is automatic on selection
-  const [current, setCurrent] = useState(0);
+  // wizard: user walks one step at a time; forward is automatic on selection.
+  // If we arrive with a line (or line+service) pre-selected via query params
+  // (e.g. from the line page's "رزرو نوبت"), skip straight to the first
+  // step the user still needs to fill instead of re-asking for the line.
+  const [current, setCurrent] = useState(() => {
+    const hasLine = !!lines.find((l) => l.slug === initialLine);
+    if (hasLine && initialService) return 2; // line + service known → provider
+    if (hasLine) return 1;                    // line known → service
+    return 0;
+  });
 
   // advance to the next step shortly after a selection (so the highlight is visible first)
   function advanceAfter(next: number) {
@@ -78,11 +86,14 @@ export function BookingClient({
     if (i <= current) setCurrent(i);
   }
 
-  // reset downstream when upstream changes
-  useEffect(() => { setServiceId(""); setProviderId(""); setDate(""); setTime(""); }, [lineId]);
-  useEffect(() => { setProviderId(""); setDate(""); setTime(""); }, [serviceId]);
-  useEffect(() => { setDate(""); setTime(""); }, [providerId]);
-  useEffect(() => { setTime(""); }, [date]);
+  // reset downstream when upstream changes — but skip on first mount so a
+  // deep-linked line/service pre-selection isn't wiped before the user sees it.
+  const mounted = useRef(false);
+  useEffect(() => { if (!mounted.current) return; setServiceId(""); setProviderId(""); setDate(""); setTime(""); }, [lineId]);
+  useEffect(() => { if (!mounted.current) return; setProviderId(""); setDate(""); setTime(""); }, [serviceId]);
+  useEffect(() => { if (!mounted.current) return; setDate(""); setTime(""); }, [providerId]);
+  useEffect(() => { if (!mounted.current) return; setTime(""); }, [date]);
+  useEffect(() => { mounted.current = true; }, []);
 
   // fetch slots when provider+date chosen
   useEffect(() => {
