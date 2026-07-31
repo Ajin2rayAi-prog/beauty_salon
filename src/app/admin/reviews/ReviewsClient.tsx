@@ -5,7 +5,7 @@ import { Star, Check, X, Trash2, Clock, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { toJalali } from "@/lib/utils";
 
-type Review = { id: string; authorName: string; rating: number; text: string; approved: boolean; createdAt: string };
+type Review = { id: string; authorName: string; rating: number; text: string; approved: boolean; createdAt: string; providerName?: string | null };
 
 function Stars({ n }: { n: number }) {
   return (
@@ -49,7 +49,11 @@ export function ReviewsClient({ initial }: { initial: Review[] }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-bold">{r.authorName}</p>
-          <div className="mt-1 flex items-center gap-2"><Stars n={r.rating} /><span className="text-[11px] text-white/40">{toJalali(new Date(r.createdAt))}</span></div>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <Stars n={r.rating} />
+            <span className="text-[11px] text-white/40">{toJalali(new Date(r.createdAt))}</span>
+            <span className="badge text-[10px] text-plum-200">{r.providerName ? `دربارهٔ ${r.providerName}` : "دربارهٔ سالن"}</span>
+          </div>
         </div>
         <div className="flex gap-1.5">
           {r.approved ? (

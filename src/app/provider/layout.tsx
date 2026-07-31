@@ -8,6 +8,7 @@ export default async function ProviderLayout({ children }: { children: React.Rea
 
   const items: NavItem[] = [
     { href: "/provider", label: "داشبورد", icon: "LayoutDashboard" },
+    { href: "/provider/profile", label: "پروفایل و رزومه", icon: "UserCircle" },
     { href: "/provider/calendar", label: "تقویم نوبت‌ها", icon: "CalendarDays" },
     { href: "/provider/schedule", label: "ساعات کاری", icon: "Clock" },
     { href: "/provider/portfolio", label: "نمونه‌کارها", icon: "Camera" },

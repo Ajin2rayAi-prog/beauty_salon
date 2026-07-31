@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Star, Send, Loader2, Check } from "lucide-react";
 import toast from "react-hot-toast";
 
-export function ReviewForm({ salonId }: { salonId: string }) {
+export function ReviewForm({ salonId, providerId }: { salonId: string; providerId?: string }) {
   const [authorName, setName] = useState("");
   const [text, setText] = useState("");
   const [rating, setRating] = useState(5);
@@ -18,7 +18,7 @@ export function ReviewForm({ salonId }: { salonId: string }) {
     try {
       const res = await fetch("/api/reviews", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ salonId, authorName, text, rating }),
+        body: JSON.stringify({ salonId, providerId, authorName, text, rating }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "خطا");

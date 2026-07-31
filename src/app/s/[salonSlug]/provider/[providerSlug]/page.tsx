@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { Wordmark } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { providerAvatar } from "@/lib/images";
-import { CalendarHeart, ArrowRight, Instagram, Camera } from "lucide-react";
+import { getSalonEntitlements } from "@/lib/entitlements";
+import { ReviewForm } from "../../ReviewForm";
+import { CalendarHeart, ArrowRight, Instagram, Camera, Star } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,21 @@ export default async function ProviderProfilePage({
     },
   });
   if (!provider || !provider.active) notFound();
+
+  // Reviews for THIS provider (moderated) — gated behind the reviews feature.
+  const ent = await getSalonEntitlements(salon.id);
+  const showReviews = !!ent.features.reviews;
+  const reviews = showReviews
+    ? await prisma.review.findMany({
+        where: { salonId: salon.id, providerId: provider.id, approved: true },
+        orderBy: { createdAt: "desc" },
+        take: 12,
+        select: { id: true, authorName: true, rating: true, text: true },
+      })
+    : [];
+  const avgRating = reviews.length
+    ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10
+    : null;
 
   // Group portfolios by line (key requirement: نمونه‌کار به‌تفکیک هر لاین)
   const byLine = new Map<string, { lineName: string; lineSlug: string; items: typeof provider.portfolios }>();
@@ -134,6 +151,42 @@ export default async function ProviderProfilePage({
               </section>
             )}
           </div>
+        )}
+
+        {/* Reviews for this provider (moderated by the salon manager) */}
+        {showReviews && (
+          <section className="mt-16">
+            <div className="mb-6 flex flex-wrap items-center gap-3">
+              <span className="eyebrow"><Star size={13} /> نظرات مراجعین</span>
+              {avgRating != null && (
+                <span className="inline-flex items-center gap-1.5 text-sm text-white/70">
+                  <Star size={15} className="fill-gold-300 text-gold-300" />
+                  <span className="font-bold text-gold-300">{avgRating.toFixed(1)}</span>
+                  <span className="text-white/40">از {reviews.length} نظر</span>
+                </span>
+              )}
+            </div>
+
+            {reviews.length > 0 ? (
+              <div className="mb-8 columns-1 gap-4 sm:columns-2 [&>*]:mb-4 [&>*]:break-inside-avoid">
+                {reviews.map((r) => (
+                  <div key={r.id} className="card p-5">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star key={i} size={13} className={i <= r.rating ? "fill-gold-300 text-gold-300" : "text-white/20"} />
+                      ))}
+                    </div>
+                    <p className="mt-3 text-sm leading-7 text-white/75">{r.text}</p>
+                    <p className="mt-3 text-xs font-bold text-rose-200">— {r.authorName}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mb-8 text-sm text-white/40">هنوز نظری برای این متخصص ثبت نشده است. اولین نفر باشید.</p>
+            )}
+
+            <ReviewForm salonId={salon.id} providerId={provider.id} />
+          </section>
         )}
       </main>
     </div>

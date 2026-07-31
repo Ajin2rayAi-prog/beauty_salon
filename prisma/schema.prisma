@@ -149,6 +149,7 @@ model Provider {
   schedules  ProviderSchedule[]
   portfolios ProviderPortfolio[]
   appointments Appointment[]
+  reviews    Review[]
 
   @@unique([salonId, slug])
   @@index([salonId])
@@ -413,6 +414,7 @@ model Review {
   salonId    String
   salon      Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
   providerId String?
+  provider   Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
   customerId String?
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   authorName String

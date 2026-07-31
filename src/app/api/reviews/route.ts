@@ -11,6 +11,7 @@ export async function POST(req: Request) {
   const authorName = String(b.authorName || "").trim();
   const text = String(b.text || "").trim();
   const rating = Math.min(5, Math.max(1, Math.round(Number(b.rating) || 5)));
+  const providerId = b.providerId ? String(b.providerId) : null;
 
   if (!salonId || !authorName || !text) {
     return NextResponse.json({ error: "نام، متن و امتیاز الزامی است" }, { status: 400 });
@@ -25,8 +26,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "ثبت نظر برای این سالن فعال نیست" }, { status: 403 });
   }
 
+  // If the review targets a provider, that provider must belong to this salon.
+  if (providerId) {
+    const p = await prisma.provider.findFirst({ where: { id: providerId, salonId }, select: { id: true } });
+    if (!p) return NextResponse.json({ error: "خدمت‌دهنده نامعتبر است" }, { status: 400 });
+  }
+
   await prisma.review.create({
-    data: { salonId, authorName, rating, text, approved: false },
+    data: { salonId, providerId, authorName, rating, text, approved: false },
   });
   // Not shown until an admin approves it.
   return NextResponse.json({ ok: true });

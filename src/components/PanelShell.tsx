@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Scissors, Users, CalendarClock, Wallet, Bell, Settings,
   CalendarDays, Clock, Camera, CalendarHeart, Building2, BadgeCheck,
   FileText, Sparkles, LayoutTemplate,
-  ClipboardList, Package, Star, Store, Gift,
+  ClipboardList, Package, Star, Store, Gift, UserCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ export const PANEL_ICONS = {
   LayoutDashboard, Scissors, Users, CalendarClock, Wallet, Bell, Settings,
   CalendarDays, Clock, Camera, CalendarHeart, Building2, BadgeCheck,
   FileText, Sparkles, LayoutTemplate,
-  ClipboardList, Package, Star, Store, Gift,
+  ClipboardList, Package, Star, Store, Gift, UserCircle,
 } satisfies Record<string, LucideIcon>;
 
 export type PanelIconName = keyof typeof PANEL_ICONS;

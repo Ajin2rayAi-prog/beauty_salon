@@ -22,16 +22,29 @@ export function uploadDir(): string {
 
 const MIME_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
+  "image/jpg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
+  "image/avif": "avif",
+  "image/bmp": "bmp",
+  "image/tiff": "tiff",
+  "image/x-icon": "ico",
+  "image/vnd.microsoft.icon": "ico",
+  "image/heic": "heic",
+  "image/heif": "heif",
 };
 
-export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB
+export const MAX_UPLOAD_BYTES = 35 * 1024 * 1024; // 35MB
 
-/** Allowed image mime → file extension, or null if unsupported. */
+/**
+ * Allowed image mime → file extension. We deliberately reject SVG: it can carry
+ * inline scripts and would be a stored-XSS vector when served same-origin. The
+ * in-app editor exports raster (webp/png/jpeg) anyway, so every common photo
+ * format a phone or camera produces is covered.
+ */
 export function extForMime(mime: string): string | null {
-  return MIME_EXT[mime] ?? null;
+  return MIME_EXT[mime] ?? (mime.startsWith("image/") && mime !== "image/svg+xml" ? "img" : null);
 }
 
 /** Save raw image bytes under a random name; returns the public URL to serve it. */
@@ -63,6 +76,18 @@ export function contentTypeForName(name: string): string {
       return "image/webp";
     case "gif":
       return "image/gif";
+    case "avif":
+      return "image/avif";
+    case "bmp":
+      return "image/bmp";
+    case "tiff":
+      return "image/tiff";
+    case "ico":
+      return "image/x-icon";
+    case "heic":
+      return "image/heic";
+    case "heif":
+      return "image/heif";
     default:
       return "application/octet-stream";
   }

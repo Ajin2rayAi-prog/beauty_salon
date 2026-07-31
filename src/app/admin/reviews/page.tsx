@@ -13,11 +13,13 @@ export default async function AdminReviewsPage() {
   const reviews = await prisma.review.findMany({
     where: { salonId },
     orderBy: [{ approved: "asc" }, { createdAt: "desc" }],
+    include: { provider: { include: { user: { select: { name: true } } } } },
   });
 
   const list = reviews.map((r) => ({
     id: r.id, authorName: r.authorName, rating: r.rating, text: r.text,
     approved: r.approved, createdAt: r.createdAt.toISOString(),
+    providerName: r.provider ? (r.provider.user?.name || r.provider.title || null) : null,
   }));
 
   return (
