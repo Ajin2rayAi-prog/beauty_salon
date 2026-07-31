@@ -24,6 +24,7 @@ export function PortfolioFeed({
   const [filter, setFilter] = useState<string>("all");
   const [guestName, setGuestName] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [me, setMe] = useState<{ name: string } | null>(null);
 
   // restore per-visitor like state + saved name from localStorage
   useEffect(() => {
@@ -32,6 +33,16 @@ export function PortfolioFeed({
       setLiked(Object.fromEntries(l.map((id) => [id, true])));
       setGuestName(localStorage.getItem(NAME_KEY) || "");
     } catch { /* ignore */ }
+  }, []);
+
+  // detect a logged-in session (no SessionProvider needed on public pages)
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((s) => { if (alive && s?.user?.name) setMe({ name: s.user.name }); })
+      .catch(() => { /* ignore */ });
+    return () => { alive = false; };
   }, []);
 
   // lock body scroll while a post is open
@@ -120,7 +131,7 @@ export function PortfolioFeed({
         <PostModal
           post={openPost} providerName={providerName} providerPhoto={providerPhoto}
           liked={!!liked[openPost.id]} onLike={() => toggleLike(openPost)}
-          guestName={guestName} setGuestName={setGuestName}
+          me={me} guestName={guestName} setGuestName={setGuestName}
           onCommented={(c) => onCommented(openPost.id, c)}
           onClose={() => setOpenId(null)}
         />
@@ -138,10 +149,11 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 function PostModal({
-  post, providerName, providerPhoto, liked, onLike, guestName, setGuestName, onCommented, onClose,
+  post, providerName, providerPhoto, liked, onLike, me, guestName, setGuestName, onCommented, onClose,
 }: {
   post: Post; providerName: string; providerPhoto: string; liked: boolean; onLike: () => void;
-  guestName: string; setGuestName: (v: string) => void; onCommented: (c: Comment) => void; onClose: () => void;
+  me: { name: string } | null; guestName: string; setGuestName: (v: string) => void;
+  onCommented: (c: Comment) => void; onClose: () => void;
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -160,13 +172,18 @@ function PostModal({
     try {
       const res = await fetch("/api/public/portfolio/comment", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ portfolioId: post.id, authorName: guestName.trim() || "مهمان", text: text.trim() }),
+        body: JSON.stringify({ portfolioId: post.id, authorName: me ? "" : guestName.trim() || "مهمان", text: text.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "خطا");
-      onCommented(data.comment);
       setText("");
-      try { if (guestName.trim()) localStorage.setItem(NAME_KEY, guestName.trim()); } catch { /* ignore */ }
+      if (data.pending) {
+        // guest comment: hidden until the salon approves it
+        toast.success("دیدگاه شما ثبت شد و پس از تأیید نمایش داده می‌شود");
+      } else {
+        onCommented(data.comment);
+      }
+      try { if (!me && guestName.trim()) localStorage.setItem(NAME_KEY, guestName.trim()); } catch { /* ignore */ }
     } catch (err: any) {
       toast.error(err.message || "خطا در ثبت دیدگاه");
     } finally { setSending(false); }
@@ -219,12 +236,18 @@ function PostModal({
             <span className="mr-auto text-[11px] text-white/40">{toJalali(post.createdAt)}</span>
           </div>
 
-          <form onSubmit={submit} className="flex items-center gap-2 p-3">
-            <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="نام" className="input w-24 py-2 text-xs" />
-            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="دیدگاه بگذارید…" className="input flex-1 py-2 text-xs" />
-            <button disabled={sending || !text.trim()} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rose-gradient text-white disabled:opacity-40" aria-label="ارسال">
-              {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-            </button>
+          <form onSubmit={submit} className="space-y-2 border-t border-white/[0.06] p-3">
+            {me ? (
+              <p className="text-[11px] text-white/45">دیدگاه به‌نام <b className="font-bold text-white/70">{me.name}</b></p>
+            ) : (
+              <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="نام شما (اختیاری)" className="input w-full py-2 text-xs" />
+            )}
+            <div className="flex items-center gap-2">
+              <input value={text} onChange={(e) => setText(e.target.value)} placeholder="دیدگاه بگذارید…" className="input min-w-0 flex-1 py-2 text-sm" />
+              <button disabled={sending || !text.trim()} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-rose-gradient text-white disabled:opacity-40" aria-label="ارسال">
+                {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              </button>
+            </div>
           </form>
         </div>
       </div>

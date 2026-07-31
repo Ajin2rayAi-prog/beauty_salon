@@ -8,7 +8,7 @@ import { PhotoField } from "@/components/PhotoField";
 import { toJalali } from "@/lib/utils";
 
 type LineOpt = { id: string; name: string };
-type Comment = { id: string; authorName: string; text: string; createdAt: string };
+type Comment = { id: string; authorName: string; text: string; createdAt: string; approved: boolean };
 type Item = {
   id: string; imageUrl: string; caption: string | null; likes: number; createdAt: string;
   lineId: string | null; line: { id: string; name: string } | null; comments: Comment[];
@@ -95,6 +95,16 @@ export function PortfolioClient({
     if (!res.ok) { toast.error("خطا در حذف دیدگاه"); return; }
     setItems((list) => list.map((x) => (x.id === postId ? { ...x, comments: x.comments.filter((c) => c.id !== commentId) } : x)));
     toast.success("دیدگاه حذف شد");
+  }
+
+  async function approveComment(postId: string, commentId: string) {
+    const res = await fetch("/api/provider/portfolio/comment", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: commentId }),
+    });
+    if (!res.ok) { toast.error("خطا در تأیید دیدگاه"); return; }
+    setItems((list) => list.map((x) => (x.id === postId ? { ...x, comments: x.comments.map((c) => (c.id === commentId ? { ...c, approved: true } : c)) } : x)));
+    toast.success("دیدگاه تأیید و منتشر شد");
   }
   // PLACEHOLDER_RENDER
   return (
@@ -183,9 +193,10 @@ export function PortfolioClient({
           <p className="mt-4">هنوز پستی منتشر نکرده‌اید.</p>
         </div>
       ) : (
-        <div className="mx-auto max-w-md space-y-6">
+        // mobile: single column feed; desktop: 4 posts per row
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {items.map((it, i) => (
-            <article key={it.id} className="card animate-fade-up overflow-hidden p-0" style={{ animationDelay: `${i * 0.05}s` }}>
+            <article key={it.id} className="card animate-fade-up flex flex-col overflow-hidden p-0" style={{ animationDelay: `${i * 0.05}s` }}>
               {/* header */}
               <div className="flex items-center gap-3 p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -213,12 +224,19 @@ export function PortfolioClient({
               {/* caption */}
               {it.caption && <p className="px-3 pt-2 text-sm leading-6"><b className="font-bold">{providerName}</b>{" "}<span className="text-white/80">{it.caption}</span></p>}
               {/* comments (provider moderates) */}
-              <div className="space-y-2 px-3 py-3">
+              <div className="mt-auto space-y-2 px-3 py-3">
                 {it.comments.length === 0 ? (
                   <p className="text-[11px] text-white/35">هنوز دیدگاهی ثبت نشده.</p>
                 ) : it.comments.map((c) => (
                   <div key={c.id} className="group flex items-start gap-2 text-sm">
-                    <span className="min-w-0 flex-1"><b className="font-bold">{c.authorName}</b>{" "}<span className="text-white/75">{c.text}</span></span>
+                    <span className="min-w-0 flex-1">
+                      <b className="font-bold">{c.authorName}</b>{" "}
+                      <span className="text-white/75">{c.text}</span>
+                      {!c.approved && <span className="mr-1.5 inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">در انتظار تأیید</span>}
+                    </span>
+                    {!c.approved && (
+                      <button onClick={() => approveComment(it.id, c.id)} title="تأیید و انتشار" className="shrink-0 text-emerald-300/80 transition hover:text-emerald-200"><Check size={14} /></button>
+                    )}
                     <button onClick={() => removeComment(it.id, c.id)} title="حذف دیدگاه" className="shrink-0 text-white/30 opacity-0 transition hover:text-red-300 group-hover:opacity-100"><Trash2 size={13} /></button>
                   </div>
                 ))}

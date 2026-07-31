@@ -3,9 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { StatusBadge } from "@/components/Badge";
 import { formatPrice, formatShortDate, formatTime, payMethodLabel } from "@/lib/utils";
 import Link from "next/link";
-import { CalendarHeart, MapPin } from "lucide-react";
+import { CalendarHeart, MapPin, RotateCcw } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+// Deep-link straight to the booking wizard with line/service/provider pre-picked
+// so the customer only chooses a new day & time ("وقت بعدی").
+function rebookHref(a: {
+  salon: { slug: string }; line: { slug: string }; provider: { slug: string }; serviceId: string | null;
+}) {
+  const p = new URLSearchParams({ line: a.line.slug, provider: a.provider.slug });
+  if (a.serviceId) p.set("service", a.serviceId);
+  return `/s/${a.salon.slug}/book?${p.toString()}`;
+}
 
 export default async function CustomerPage() {
   const user = await requireRole([ROLES.CUSTOMER]);
@@ -68,6 +78,9 @@ export default async function CustomerPage() {
                   <span className="text-xs text-white/40">{payMethodLabel(a.payMethod)}</span>
                   <StatusBadge status={a.payStatus} />
                 </div>
+                <Link href={rebookHref(a)} className="btn-outline mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-sm">
+                  <RotateCcw size={15} /> رزرو مجدد / وقت بعدی
+                </Link>
               </div>
             ))}
           </div>
@@ -84,20 +97,28 @@ export default async function CustomerPage() {
               <thead>
                 <tr className="border-b border-white/[0.06] text-right text-xs text-white/45">
                   <th className="p-3 font-semibold">خدمت</th>
+                  <th className="p-3 font-semibold">خدمت‌دهنده</th>
                   <th className="p-3 font-semibold">سالن</th>
                   <th className="p-3 font-semibold">تاریخ</th>
                   <th className="p-3 font-semibold">مبلغ</th>
                   <th className="p-3 font-semibold">وضعیت</th>
+                  <th className="p-3 font-semibold"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.05]">
                 {past.map((a) => (
                   <tr key={a.id} className="text-white/75 transition hover:bg-white/[0.03]">
                     <td className="p-3 font-semibold">{a.service?.name ?? a.line.name}</td>
+                    <td className="p-3 text-white/55">{a.provider.title}</td>
                     <td className="p-3 text-white/55">{a.salon.name}</td>
                     <td className="p-3 text-white/55">{formatShortDate(a.startAt)}</td>
                     <td className="p-3 font-bold text-rose-300">{formatPrice(a.amount)}</td>
                     <td className="p-3"><StatusBadge status={a.status} /></td>
+                    <td className="p-3">
+                      <Link href={rebookHref(a)} className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/25">
+                        <RotateCcw size={13} /> رزرو مجدد
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

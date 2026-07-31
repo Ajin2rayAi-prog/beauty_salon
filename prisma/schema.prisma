@@ -98,6 +98,7 @@ model User {
   provider   Provider?
   customers  Customer[]
   notifications Notification[]
+  portfolioComments PortfolioComment[]
 }
 
 // ─── Domain ─────────────────────────────────────────────────────────────────
@@ -184,14 +185,18 @@ model ProviderPortfolio {
   @@index([providerId])
 }
 
-// A public comment on a portfolio post (Instagram-style). Posted immediately;
-// the provider/salon can delete any comment (moderation after the fact).
+// A public comment on a portfolio post (Instagram-style). A comment from a
+// logged-in user is auto-approved and shows immediately; an anonymous guest's
+// comment stays hidden (approved=false) until the provider/salon approves it.
 model PortfolioComment {
   id          String   @id @default(cuid())
   portfolioId String
   portfolio   ProviderPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
   authorName  String
+  authorId    String?  // set when the commenter is a logged-in user
+  author      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
   text        String
+  approved    Boolean  @default(false) // logged-in => true; guests => needs moderation
   createdAt   DateTime @default(now())
 
   @@index([portfolioId])
@@ -326,6 +331,20 @@ model PendingPayment {
   createdAt     DateTime @default(now())
 
   @@index([salonId])
+}
+
+// One-time SMS codes for phone login/registration (customer auth). Codes are
+// stored hashed and expire quickly; verified codes are deleted.
+model Otp {
+  id        String   @id @default(cuid())
+  phone     String
+  codeHash  String   // bcrypt hash of the numeric code
+  purpose   String   @default("LOGIN") // LOGIN | REGISTER
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone])
 }
 
 model Payment {

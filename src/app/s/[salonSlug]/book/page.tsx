@@ -59,6 +59,7 @@ export default async function BookingPage({
           initialProvider={searchParams.provider ?? ""}
           meName={me?.name ?? ""}
           mePhone={me?.phone ?? ""}
+          loggedIn={!!me}
           lines={JSON.parse(JSON.stringify(salon.lines))}
           providers={JSON.parse(JSON.stringify(salon.providers))}
         />

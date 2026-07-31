@@ -28,7 +28,7 @@ export default async function ProviderProfilePage({
         orderBy: { createdAt: "desc" },
         include: {
           line: { select: { id: true, name: true } },
-          comments: { orderBy: { createdAt: "asc" } },
+          comments: { where: { approved: true }, orderBy: { createdAt: "asc" } },
         },
       },
     },

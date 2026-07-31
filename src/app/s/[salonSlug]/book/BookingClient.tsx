@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { formatPrice, formatNumber, toJalali } from "@/lib/utils";
 import { providerAvatar } from "@/lib/images";
-import { Scissors, Users, CalendarDays, Clock, CreditCard, Store, Check, Loader2, ChevronRight, Sparkles } from "lucide-react";
+import { Scissors, Users, CalendarDays, Clock, CreditCard, Store, Check, Loader2, ChevronRight, Sparkles, ShieldCheck, MessageSquareText, KeyRound } from "lucide-react";
 import toast from "react-hot-toast";
 
 type Service = { id: string; name: string; durationMin: number; price: number };
@@ -34,10 +35,10 @@ function nextDays(n = 14) {
 const STEPS = ["لاین", "خدمت", "خدمت‌دهنده", "روز و ساعت", "اطلاعات و پرداخت"];
 
 export function BookingClient({
-  salonId, initialLine, initialService, initialProvider, meName, mePhone, lines, providers,
+  salonId, initialLine, initialService, initialProvider, meName, mePhone, loggedIn, lines, providers,
 }: {
   salonId: string; initialLine: string; initialService: string; initialProvider: string;
-  meName: string; mePhone: string; lines: Line[]; providers: Provider[];
+  meName: string; mePhone: string; loggedIn: boolean; lines: Line[]; providers: Provider[];
 }) {
   const router = useRouter();
   const days = useMemo(() => nextDays(14), []);
@@ -56,6 +57,13 @@ export function BookingClient({
   const [notes, setNotes] = useState("");
   const [payMethod, setPayMethod] = useState<"IN_PERSON" | "ONLINE">("IN_PERSON");
   const [submitting, setSubmitting] = useState(false);
+
+  // auth gate: everyone books as a real account. Server tells us if a session
+  // already exists; otherwise the last step shows an inline login/signup panel.
+  const [authed, setAuthed] = useState(loggedIn);
+  // keep name/phone in sync when the session prop lands (e.g. after router.refresh)
+  useEffect(() => { if (meName) setName(meName); }, [meName]);
+  useEffect(() => { if (mePhone) setPhone(mePhone); }, [mePhone]);
 
   const line = lines.find((l) => l.id === lineId);
   const service = line?.services.find((s) => s.id === serviceId);
@@ -139,6 +147,15 @@ export function BookingClient({
   }
 
   const deposit = service ? Math.round(service.price * 0.3) : 0;
+
+  // called by AuthGate once phone login/signup succeeds
+  function onAuthed(authedPhone: string) {
+    setAuthed(true);
+    if (!phone.trim()) setPhone(authedPhone);
+    // pull the fresh session (name/phone) back into props without a full reload
+    router.refresh();
+    toast.success("خوش آمدید — ادامهٔ رزرو");
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -256,6 +273,9 @@ export function BookingClient({
         {/* Step 4: info & payment */}
         {current === 4 && (
           <Section icon={<CreditCard size={18} />} title="۵. اطلاعات و پرداخت">
+            {!authed ? (
+              <AuthGate onAuthed={onAuthed} />
+            ) : (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><label className="label">نام و نام خانوادگی</label><input value={name} onChange={(e) => setName(e.target.value)} className="input mt-1.5" /></div>
@@ -284,6 +304,7 @@ export function BookingClient({
                 {payMethod === "ONLINE" ? "پرداخت بیعانه و رزرو" : "ثبت نوبت"}
               </button>
             </div>
+            )}
           </Section>
         )}
 
@@ -353,6 +374,145 @@ function Row({ label, value }: { label: string; value?: string }) {
     <div className="flex items-center justify-between">
       <span className="text-white/50">{label}</span>
       <span className="font-semibold text-white/90">{value ?? "—"}</span>
+    </div>
+  );
+}
+
+// Inline login/signup shown before payment for guests. Two paths:
+//  • کد پیامکی (OTP): request a code, then sign in with phone+otp (auto-creates
+//    the customer account if new).
+//  • رمز عبور: sign in with phone+password; if no account exists yet we register
+//    it (password must be ≥۸ با حرف کوچک، بزرگ و عدد) then sign in.
+function AuthGate({ onAuthed }: { onAuthed: (phone: string) => void }) {
+  const [mode, setMode] = useState<"otp" | "password">("otp");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
+  const phoneOk = /^09\d{9}$/.test(phone.trim());
+
+  async function requestCode() {
+    if (!phoneOk) { toast.error("شماره موبایل معتبر نیست"); return; }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/otp/request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ارسال کد ناموفق بود");
+      setOtpSent(true);
+      setCooldown(45);
+      if (data.devCode) toast.success(`کد تست: ${data.devCode}`, { duration: 8000 });
+      else toast.success("کد ورود پیامک شد");
+    } catch (err: any) {
+      toast.error(err.message || "خطا در ارسال کد");
+    } finally { setBusy(false); }
+  }
+
+  async function verifyCode() {
+    if (code.trim().length < 4) { toast.error("کد را کامل وارد کنید"); return; }
+    setBusy(true);
+    try {
+      const r = await signIn("credentials", { phone: phone.trim(), otp: code.trim(), redirect: false });
+      if (r?.ok) onAuthed(phone.trim());
+      else toast.error("کد نادرست یا منقضی شده است");
+    } finally { setBusy(false); }
+  }
+
+  async function passwordAuth() {
+    if (!phoneOk) { toast.error("شماره موبایل معتبر نیست"); return; }
+    setBusy(true);
+    try {
+      // existing account? try to sign in directly first
+      const r = await signIn("credentials", { phone: phone.trim(), password, redirect: false });
+      if (r?.ok) { onAuthed(phone.trim()); return; }
+      // otherwise register a new customer (enforces password complexity), then sign in
+      const reg = await fetch("/api/register", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim(), password }),
+      });
+      const rd = await reg.json();
+      if (!reg.ok) throw new Error(rd.error || "ثبت‌نام ناموفق بود");
+      const r2 = await signIn("credentials", { phone: phone.trim(), password, redirect: false });
+      if (r2?.ok) onAuthed(phone.trim());
+      else toast.error("ورود ناموفق بود");
+    } catch (err: any) {
+      toast.error(err.message || "خطا در ورود");
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-3 rounded-2xl border border-rose-400/25 bg-rose-500/10 p-4">
+        <ShieldCheck size={20} className="mt-0.5 shrink-0 text-rose-300" />
+        <p className="text-sm leading-6 text-white/75">
+          برای نهایی‌کردن نوبت، ابتدا با موبایل خود وارد شوید یا ثبت‌نام کنید تا نوبت‌هایتان در پروفایل ثبت شود.
+        </p>
+      </div>
+
+      <div>
+        <label className="label">شماره موبایل</label>
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input mt-1.5" dir="ltr" placeholder="09..." inputMode="numeric" />
+      </div>
+
+      {/* method tabs */}
+      <div className="flex gap-2">
+        <button type="button" onClick={() => setMode("otp")}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition ${mode === "otp" ? "bg-rose-gradient text-white" : "bg-white/[0.05] text-white/55 hover:text-white/80"}`}>
+          <MessageSquareText size={14} /> کد پیامکی
+        </button>
+        <button type="button" onClick={() => setMode("password")}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition ${mode === "password" ? "bg-rose-gradient text-white" : "bg-white/[0.05] text-white/55 hover:text-white/80"}`}>
+          <KeyRound size={14} /> رمز عبور
+        </button>
+      </div>
+
+      {mode === "otp" ? (
+        <div className="space-y-3">
+          {!otpSent ? (
+            <button type="button" onClick={requestCode} disabled={busy || !phoneOk} className="btn-rose w-full justify-center py-3 text-sm disabled:opacity-40">
+              {busy ? <Loader2 size={16} className="animate-spin" /> : <MessageSquareText size={16} />} ارسال کد ورود
+            </button>
+          ) : (
+            <>
+              <div>
+                <label className="label">کد ۵ رقمی پیامک‌شده</label>
+                <input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                  className="input mt-1.5 text-center tracking-[0.5em]" dir="ltr" inputMode="numeric" placeholder="—————" />
+              </div>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={verifyCode} disabled={busy || code.trim().length < 4} className="btn-rose flex-1 justify-center py-3 text-sm disabled:opacity-40">
+                  {busy ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} تأیید و ورود
+                </button>
+                <button type="button" onClick={requestCode} disabled={busy || cooldown > 0} className="btn-outline shrink-0 px-4 py-3 text-xs disabled:opacity-40">
+                  {cooldown > 0 ? `ارسال مجدد (${formatNumber(cooldown)})` : "ارسال مجدد"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div>
+            <label className="label">رمز عبور</label>
+            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="input mt-1.5" dir="ltr" placeholder="••••••••" />
+            <p className="mt-1.5 text-[11px] text-white/40">حساب دارید؟ رمزتان را وارد کنید. کاربر جدید؟ رمز دلخواه حداقل ۸ کاراکتر شامل حروف کوچک، بزرگ و عدد بسازید.</p>
+          </div>
+          <button type="button" onClick={passwordAuth} disabled={busy || !phoneOk || password.length < 6} className="btn-rose w-full justify-center py-3 text-sm disabled:opacity-40">
+            {busy ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />} ورود / ثبت‌نام
+          </button>
+        </div>
+      )}
     </div>
   );
 }
