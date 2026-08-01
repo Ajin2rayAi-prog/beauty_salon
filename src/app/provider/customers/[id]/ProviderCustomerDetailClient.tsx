@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Save, Loader2, MessageCircle, Crown, Palette, AlertTriangle, Sparkles, StickyNote, CalendarClock, History, NotebookPen } from "lucide-react";
+import { Save, Loader2, MessageCircle, Palette, AlertTriangle, Sparkles, StickyNote, CalendarClock, History, NotebookPen, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import { formatPrice, formatNumber, toJalali } from "@/lib/utils";
 
 type Detail = {
-  id: string; name: string; phone: string; notes: string;
-  hairFormula: string; allergies: string; skinNotes: string; birthday: string;
-  loyaltyPoints: number; loyaltyTier: string;
+  id: string; name: string; phone: string;
+  hairFormula: string; allergies: string; skinNotes: string; notes: string; birthday: string;
 };
-type Hist = { id: string; startAt: string; status: string; amount: number; line: string; service: string; provider: string };
-type Note = { id: string; text: string; author: string; createdAt: string };
+type Hist = { id: string; startAt: string; status: string; amount: number; line: string; service: string; notes: string };
+type Note = { id: string; text: string; authorName: string; createdAt: string; mine: boolean };
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   PENDING: { label: "در انتظار", cls: "text-amber-300" },
@@ -20,24 +19,26 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   CANCELLED: { label: "لغوشده", cls: "text-white/40" },
   NO_SHOW: { label: "غیبت", cls: "text-red-300" },
 };
-const TIERS = ["BRONZE", "SILVER", "GOLD"];
-const TIER_LABEL: Record<string, string> = { BRONZE: "برنزی", SILVER: "نقره‌ای", GOLD: "طلایی" };
 
 function waLink(phone: string) {
   const d = phone.replace(/[^\d]/g, "").replace(/^0/, "98");
   return `https://wa.me/${d}`;
 }
 
-export function CustomerDetailClient({ initial, history, visitNotes = [] }: { initial: Detail; history: Hist[]; visitNotes?: Note[] }) {
+export function ProviderCustomerDetailClient({ initial, history, notes: initialNotes }: { initial: Detail; history: Hist[]; notes: Note[] }) {
   const [c, setC] = useState<Detail>(initial);
   const [saving, setSaving] = useState(false);
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
+  const [draft, setDraft] = useState("");
+  const [posting, setPosting] = useState(false);
   const set = <K extends keyof Detail>(k: K, v: Detail[K]) => setC((x) => ({ ...x, [k]: v }));
 
   async function save() {
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/customers/${c.id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(c),
+      const res = await fetch("/api/provider/customers", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId: c.id, hairFormula: c.hairFormula, allergies: c.allergies, skinNotes: c.skinNotes, notes: c.notes, birthday: c.birthday || null }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "خطا");
@@ -48,8 +49,29 @@ export function CustomerDetailClient({ initial, history, visitNotes = [] }: { in
       setSaving(false);
     }
   }
+
+  async function addNote() {
+    if (!draft.trim()) return;
+    setPosting(true);
+    try {
+      const res = await fetch("/api/provider/customers", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId: c.id, text: draft }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "خطا");
+      setNotes((n) => [{ id: data.note.id, text: data.note.text, authorName: data.note.authorName, createdAt: data.note.createdAt, mine: true }, ...n]);
+      setDraft("");
+      toast.success("یادداشت ثبت شد");
+    } catch (err: any) {
+      toast.error(err.message || "خطا در ثبت");
+    } finally {
+      setPosting(false);
+    }
+  }
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+    <div className="grid gap-6 lg:grid-cols-[1.25fr_1fr]">
       {/* Left: record editor */}
       <div className="space-y-5">
         <div className="card-glow relative overflow-hidden p-6">
@@ -69,7 +91,6 @@ export function CustomerDetailClient({ initial, history, visitNotes = [] }: { in
         </div>
 
         <div className="card space-y-4 p-6">
-          <div><label className="label">نام</label><input value={c.name} onChange={(e) => set("name", e.target.value)} className="input mt-1.5" /></div>
           <div>
             <label className="label flex items-center gap-1.5"><Palette size={13} className="text-rose-300" /> فرمول رنگ مو</label>
             <textarea value={c.hairFormula} onChange={(e) => set("hairFormula", e.target.value)} className="input mt-1.5 min-h-16" placeholder="مثلاً: 7.1 + 8.0 اکسیدان ۶٪ — ۳۵ دقیقه" />
@@ -98,30 +119,39 @@ export function CustomerDetailClient({ initial, history, visitNotes = [] }: { in
         </div>
       </div>
 
-      {/* Right: loyalty + history */}
+      {/* Right: per-visit notes + history */}
       <div className="space-y-5">
         <div className="card relative overflow-hidden p-6">
-          <div className="blob -right-6 -top-8 h-32 w-32 bg-gold-400/15" />
-          <h3 className="relative flex items-center gap-2 font-black"><Crown size={16} className="text-gold-300" /> باشگاه مشتریان</h3>
-          <div className="relative mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="label">امتیاز</label>
-              <input type="number" min={0} value={c.loyaltyPoints} onChange={(e) => set("loyaltyPoints", Number(e.target.value))} className="input mt-1.5" dir="ltr" />
-            </div>
-            <div>
-              <label className="label">سطح</label>
-              <select value={c.loyaltyTier} onChange={(e) => set("loyaltyTier", e.target.value)} className="input mt-1.5">
-                {TIERS.map((t) => <option key={t} value={t}>{TIER_LABEL[t]}</option>)}
-              </select>
-            </div>
+          <div className="blob -right-6 -top-8 h-32 w-32 bg-rose-400/15" />
+          <h3 className="relative flex items-center gap-2 font-black"><NotebookPen size={16} className="text-rose-300" /> یادداشت هر ویزیت</h3>
+          <div className="relative mt-4 flex gap-2">
+            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} className="input min-h-12 flex-1" placeholder="یادداشت این ویزیت را بنویسید…" />
+            <button onClick={addNote} disabled={posting || !draft.trim()} className="btn-rose shrink-0 self-stretch px-4" title="ثبت یادداشت">
+              {posting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+            </button>
           </div>
-          <p className="relative mt-3 text-[11px] text-white/40">امتیاز پس از هر پرداخت موفق به‌صورت خودکار اضافه می‌شود؛ اینجا می‌توانی دستی هم اصلاح کنی.</p>
+          {notes.length === 0 ? (
+            <p className="relative mt-4 text-sm text-white/40">هنوز یادداشتی ثبت نشده است.</p>
+          ) : (
+            <ul className="relative mt-4 space-y-2.5">
+              {notes.map((n) => (
+                <li key={n.id} className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5">
+                  <p className="text-sm leading-6 text-white/85">{n.text}</p>
+                  <p className="mt-2 flex items-center gap-1.5 text-[11px] text-white/40">
+                    <span className={n.mine ? "text-rose-300" : ""}>{n.mine ? "شما" : n.authorName}</span>
+                    <span>•</span>
+                    <span>{toJalali(new Date(n.createdAt))}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="card p-6">
-          <h3 className="flex items-center gap-2 font-black"><History size={16} className="text-plum-300" /> سابقه خدمات ({formatNumber(history.length)})</h3>
+          <h3 className="flex items-center gap-2 font-black"><History size={16} className="text-plum-300" /> سابقهٔ خدمات شما ({formatNumber(history.length)})</h3>
           {history.length === 0 ? (
-            <p className="mt-4 text-sm text-white/40">هنوز نوبتی ثبت نشده است.</p>
+            <p className="mt-4 text-sm text-white/40">نوبتی ثبت نشده است.</p>
           ) : (
             <ol className="mt-4 space-y-3 border-r border-white/[0.08] pr-4">
               {history.map((h) => {
@@ -134,28 +164,13 @@ export function CustomerDetailClient({ initial, history, visitNotes = [] }: { in
                       <span className={`text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
                     </div>
                     <p className="mt-0.5 text-[11px] text-white/45">
-                      {toJalali(new Date(h.startAt))}{h.provider ? ` • ${h.provider}` : ""}{h.amount ? ` • ${formatPrice(h.amount)}` : ""}
+                      {toJalali(new Date(h.startAt))}{h.amount ? ` • ${formatPrice(h.amount)}` : ""}
                     </p>
+                    {h.notes && <p className="mt-1 rounded-lg bg-white/[0.03] px-2 py-1 text-[11px] text-white/55">درخواست مشتری: {h.notes}</p>}
                   </li>
                 );
               })}
             </ol>
-          )}
-        </div>
-
-        <div className="card p-6">
-          <h3 className="flex items-center gap-2 font-black"><NotebookPen size={16} className="text-rose-300" /> یادداشت‌های خدمت‌دهنده ({formatNumber(visitNotes.length)})</h3>
-          {visitNotes.length === 0 ? (
-            <p className="mt-4 text-sm text-white/40">خدمت‌دهنده هنوز یادداشتی برای این مشتری ثبت نکرده است.</p>
-          ) : (
-            <ul className="mt-4 space-y-2.5">
-              {visitNotes.map((n) => (
-                <li key={n.id} className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5">
-                  <p className="text-sm leading-6 text-white/85">{n.text}</p>
-                  <p className="mt-2 text-[11px] text-white/40">{n.author} • {toJalali(new Date(n.createdAt))}</p>
-                </li>
-              ))}
-            </ul>
           )}
         </div>
       </div>

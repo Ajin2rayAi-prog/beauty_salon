@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   const appointments = await prisma.appointment.findMany({
     where: { providerId: provider.id, startAt: { gte: from, lt: to } },
     orderBy: { startAt: "asc" },
-    include: { customer: { select: { name: true } }, service: { select: { name: true } }, line: { select: { name: true } } },
+    include: { customer: { select: { name: true, phone: true } }, service: { select: { name: true } }, line: { select: { name: true } } },
   });
 
   return NextResponse.json({ appointments });

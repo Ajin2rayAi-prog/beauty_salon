@@ -10,6 +10,7 @@ export default async function ProviderLayout({ children }: { children: React.Rea
     { href: "/provider", label: "داشبورد", icon: "LayoutDashboard" },
     { href: "/provider/profile", label: "پروفایل و رزومه", icon: "UserCircle" },
     { href: "/provider/calendar", label: "تقویم نوبت‌ها", icon: "CalendarDays" },
+    { href: "/provider/customers", label: "مشتریان من", icon: "Users" },
     { href: "/provider/schedule", label: "ساعات کاری", icon: "Clock" },
     { href: "/provider/portfolio", label: "نمونه‌کارها", icon: "Camera" },
     { href: "/provider/earnings", label: "درآمد من", icon: "Wallet" },

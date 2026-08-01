@@ -79,9 +79,13 @@ export const defaultPlatformContent: PlatformContent = {
 
 // ── Salon (public page) content ─────────────────────────────────────────────
 export type SalonHighlight = { icon: string; title: string; text: string };
+// Banner slide managed from the admin CMS — full-bleed hero slideshow images
+// that management can swap daily/monthly, each with an optional title/subtitle.
+export type SalonBanner = { image: string; title: string; subtitle: string };
 
 export type SalonContent = {
   hero: { eyebrow: string; tagline: string };
+  banners: SalonBanner[];
   about: { title: string; body: string };
   highlights: SalonHighlight[];
   testimonials: Testimonial[];
@@ -91,6 +95,7 @@ export type SalonContent = {
 
 export const defaultSalonContent: SalonContent = {
   hero: { eyebrow: "به سالن ما خوش اومدی", tagline: "زیبایی تخصصی، در فضایی آرام و حرفه‌ای" },
+  banners: [],
   about: {
     title: "درباره ما",
     body: "تیم ما با سال‌ها تجربه در خدمت شماست؛ از فیشیال و پاکسازی پوست تا میکاپ عروس، رنگ مو و طراحی ناخن. کیفیت، بهداشت و رضایت شما اولویت ماست.",

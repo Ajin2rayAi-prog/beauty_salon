@@ -5,7 +5,7 @@ import { formatPrice, formatNumber } from "@/lib/utils";
 import { ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
 
 type Appt = {
-  id: string; startAt: string; endAt: string; status: string; payStatus: string; amount: number;
+  id: string; startAt: string; endAt: string; status: string; payStatus: string; amount: number; notes?: string | null;
   customer: { name: string }; service: { name: string } | null; line: { name: string };
 };
 
@@ -114,7 +114,7 @@ export function ProviderCalendar({ providerId }: { providerId: string }) {
                       width: `calc(${100 / 7}% - ${60 / 7}px - 6px)`,
                       overflow: "hidden",
                     }}
-                    title={`${a.customer.name} — ${a.service?.name ?? a.line.name}`}
+                    title={`${a.customer.name} — ${a.service?.name ?? a.line.name}${a.notes ? `\nدرخواست مشتری: ${a.notes}` : ""}`}
                   >
                     <p className="truncate font-bold">{new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit" }).format(s)} {a.customer.name}</p>
                     <p className="truncate opacity-70">{a.service?.name ?? a.line.name}</p>
@@ -180,6 +180,11 @@ export function ProviderCalendar({ providerId }: { providerId: string }) {
                     <p className="truncate font-bold">{a.customer.name}</p>
                     <p className="truncate text-[12px] opacity-75">{a.service?.name ?? a.line.name}</p>
                     <p className="mt-0.5 text-[11px] opacity-60">{formatPrice(a.amount)}</p>
+                    {a.notes && (
+                      <p className="mt-1.5 rounded-lg bg-black/20 px-2 py-1 text-[11px] leading-5 opacity-90">
+                        <span className="font-bold">درخواست مشتری:</span> {a.notes}
+                      </p>
+                    )}
                   </div>
                 </div>
               );

@@ -281,7 +281,7 @@ export function BookingClient({
                 <div><label className="label">نام و نام خانوادگی</label><input value={name} onChange={(e) => setName(e.target.value)} className="input mt-1.5" /></div>
                 <div><label className="label">موبایل</label><input value={phone} onChange={(e) => setPhone(e.target.value)} className="input mt-1.5" dir="ltr" placeholder="09..." /></div>
               </div>
-              <div><label className="label">یادداشت (اختیاری)</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="input mt-1.5 min-h-20" placeholder="توضیح خاصی دارید؟" /></div>
+              <div><label className="label">مشکلات یا درخواست‌های شما (اختیاری)</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="input mt-1.5 min-h-20" placeholder="اگر حساسیت، مشکل پوستی/مویی یا درخواست خاصی دارید بنویسید تا خدمت‌دهنده قبل از نوبت ببیند." /></div>
 
               <div>
                 <label className="label">روش پرداخت</label>

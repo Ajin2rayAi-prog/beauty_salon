@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Save, Loader2, Plus, Trash2, Sparkles, Info, MessageSquareQuote, Share2 } from "lucide-react";
+import { Save, Loader2, Plus, Trash2, Sparkles, Info, MessageSquareQuote, Share2, GalleryHorizontalEnd, ChevronUp, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
-import type { SalonContent, SalonHighlight, Testimonial } from "@/lib/content";
+import { PhotoField } from "@/components/PhotoField";
+import type { SalonContent, SalonHighlight, SalonBanner, Testimonial } from "@/lib/content";
 
 const TABS = [
   { id: "hero", label: "معرفی و هیرو", icon: Sparkles },
+  { id: "banners", label: "بنر اسلایدشو", icon: GalleryHorizontalEnd },
   { id: "about", label: "درباره و ویژگی‌ها", icon: Info },
   { id: "testimonials", label: "نظرات مشتریان", icon: MessageSquareQuote },
   { id: "social", label: "شبکه‌های اجتماعی", icon: Share2 },
@@ -55,6 +57,7 @@ export function ContentClient({ initial }: { initial: SalonContent }) {
         <div className="blob -left-10 -bottom-12 h-44 w-44 bg-plum-500/15" />
         <div className="relative space-y-5">
           {tab === "hero" && <HeroTab c={c} patch={patch} />}
+          {tab === "banners" && <BannersTab c={c} patch={patch} />}
           {tab === "about" && <AboutTab c={c} patch={patch} />}
           {tab === "testimonials" && <TestimonialsTab c={c} patch={patch} />}
           {tab === "social" && <SocialTab c={c} patch={patch} />}
@@ -96,6 +99,57 @@ function HeroTab({ c, patch }: TabProps) {
       <div className="sm:col-span-2">
         <Field label="عنوان بخش گالری" value={c.galleryTitle} onChange={(v) => patch({ galleryTitle: v })} />
       </div>
+    </div>
+  );
+}
+
+function BannersTab({ c, patch }: TabProps) {
+  const banners = c.banners ?? [];
+  function setB(i: number, p: Partial<SalonBanner>) {
+    patch({ banners: banners.map((b, idx) => (idx === i ? { ...b, ...p } : b)) });
+  }
+  function move(i: number, dir: -1 | 1) {
+    const j = i + dir;
+    if (j < 0 || j >= banners.length) return;
+    const next = [...banners];
+    [next[i], next[j]] = [next[j], next[i]];
+    patch({ banners: next });
+  }
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <label className="label">بنرهای اسلایدشو ({banners.length})</label>
+          <p className="mt-1 text-xs text-white/45">این تصاویر بالای صفحهٔ عمومی سالن به‌صورت اسلایدشو نمایش داده می‌شوند. هر زمان می‌توانید تغییرشان دهید.</p>
+        </div>
+        <button type="button" onClick={() => patch({ banners: [...banners, { image: "", title: "", subtitle: "" }] })} className="btn-ghost shrink-0 px-3 py-1.5 text-xs"><Plus size={13} /> افزودن بنر</button>
+      </div>
+
+      {banners.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/12 p-8 text-center text-sm text-white/45">
+          هنوز بنری اضافه نشده؛ در نبود بنر، اسلایدشو به‌صورت خودکار از عکس مدیر و خدمت‌دهنده‌ها ساخته می‌شود.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {banners.map((b, i) => (
+            <div key={i} className="rounded-2xl border border-white/[0.08] p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-xs font-semibold text-white/60">بنر {i + 1}</span>
+                <div className="flex items-center gap-1">
+                  <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="grid h-8 w-8 place-items-center rounded-lg bg-white/[0.05] text-white/60 transition hover:text-white disabled:opacity-30" title="بالا"><ChevronUp size={15} /></button>
+                  <button type="button" onClick={() => move(i, 1)} disabled={i === banners.length - 1} className="grid h-8 w-8 place-items-center rounded-lg bg-white/[0.05] text-white/60 transition hover:text-white disabled:opacity-30" title="پایین"><ChevronDown size={15} /></button>
+                  <button type="button" onClick={() => patch({ banners: banners.filter((_, idx) => idx !== i) })} className="grid h-8 w-8 place-items-center rounded-lg bg-red-500/10 text-red-300 transition hover:bg-red-500/20" title="حذف"><Trash2 size={15} /></button>
+                </div>
+              </div>
+              <PhotoField shape="square" label="تصویر بنر" value={b.image} onChange={(url) => setB(i, { image: url })} />
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <input value={b.title} onChange={(e) => setB(i, { title: e.target.value })} className="input" placeholder="عنوان (اختیاری)" />
+                <input value={b.subtitle} onChange={(e) => setB(i, { subtitle: e.target.value })} className="input" placeholder="زیرعنوان (اختیاری)" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

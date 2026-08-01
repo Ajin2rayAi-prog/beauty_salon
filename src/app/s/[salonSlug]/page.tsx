@@ -112,9 +112,18 @@ export default async function SalonPage({ params }: { params: { salonSlug: strin
     select: { id: true, name: true, avatar: true },
   });
 
-  // Full-screen hero slides: management first, then every provider. The caption
-  // under each name is their job title, or the lines they work in.
+  // Full-screen hero slides: management-curated banners first (if any), then
+  // management users, then every provider. The caption under each name is their
+  // job title, or the lines they work in.
   const heroSlides: HeroSlide[] = [
+    ...(content.banners ?? [])
+      .filter((b) => b.image)
+      .map((b) => ({
+        photo: b.image,
+        name: b.title || salon.name,
+        role: b.subtitle || "",
+        badge: undefined,
+      })),
     ...managers.map((m) => ({
       photo: m.avatar || providerAvatar("mgr-" + m.id, 1000),
       name: m.name,

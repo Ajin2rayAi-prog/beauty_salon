@@ -18,6 +18,7 @@
 /prisma/dev.db-journal
 *.db
 *.db-journal
+*.db.bak.*
 
 # debug
 npm-debug.log*

@@ -24,6 +24,9 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
           provider: { select: { title: true } },
         },
       },
+      visitNotes: {
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
   if (!customer) notFound();
@@ -36,6 +39,13 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
     line: a.line?.name ?? "",
     service: a.service?.name ?? "",
     provider: a.provider?.title ?? "",
+  }));
+
+  const visitNotes = customer.visitNotes.map((n) => ({
+    id: n.id,
+    text: n.text,
+    author: n.authorName,
+    createdAt: n.createdAt.toISOString(),
   }));
 
   return (
@@ -57,6 +67,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
           loyaltyTier: customer.loyaltyTier,
         }}
         history={history}
+        visitNotes={visitNotes}
       />
     </div>
   );

@@ -255,9 +255,26 @@ model Customer {
 
   appointments Appointment[]
   reviews      Review[]
+  visitNotes   VisitNote[]
 
   @@unique([salonId, phone])
   @@index([salonId])
+}
+
+// یادداشت هر ویزیت (per-visit note), written by the PROVIDER who served the
+// customer, visible to ADMIN in the customer dossier. Optionally tied to the
+// appointment that generated it.
+model VisitNote {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  appointmentId String?  // the visit this note belongs to (optional)
+  providerId    String?  // provider who wrote it (kept even if provider removed)
+  authorName    String   // display name of the author at write time
+  text          String
+  createdAt     DateTime @default(now())
+
+  @@index([customerId])
 }
 
 model Appointment {
