@@ -14,7 +14,7 @@ type Props = {
   busy?: boolean;
 };
 
-const VIEW = 320; // preview viewport (px)
+const VIEW_MAX = 320; // preview viewport cap (px)
 const OUT = 900; // exported image size (px)
 
 /**
@@ -30,6 +30,20 @@ export function ImageEditorModal({ file, shape = "circle", onConfirm, onCancel, 
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [fx, setFx] = useState({ bright: 100, contrast: 100, sat: 100, gray: 0 });
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+
+  // Preview size adapts to the viewport so the whole editor (crop circle +
+  // controls + save button) fits on short/small screens instead of clipping.
+  const [view, setView] = useState(VIEW_MAX);
+  useEffect(() => {
+    const fit = () => {
+      const w = Math.floor(window.innerWidth * 0.8);
+      const h = window.innerHeight - 330; // leave room for controls + buttons
+      setView(Math.max(200, Math.min(VIEW_MAX, w, h)));
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
 
   // Load the picked file into an <img> element.
   useEffect(() => {
@@ -68,8 +82,8 @@ export function ImageEditorModal({ file, shape = "circle", onConfirm, onCancel, 
     const ctx = cv.getContext("2d")!;
     ctx.fillStyle = "#0b0410";
     ctx.fillRect(0, 0, OUT, OUT);
-    const f = OUT / VIEW;
-    const base = baseSize(VIEW);
+    const f = OUT / view;
+    const base = baseSize(view);
     ctx.filter = filter;
     // Mirror CSS `transform: translate(pan) scale(zoom) rotate(rot)` (origin center).
     ctx.translate(OUT / 2 + pan.x * f, OUT / 2 + pan.y * f);
@@ -77,13 +91,13 @@ export function ImageEditorModal({ file, shape = "circle", onConfirm, onCancel, 
     ctx.rotate((rot * Math.PI) / 180);
     ctx.drawImage(img, (-base.w * f) / 2, (-base.h * f) / 2, base.w * f, base.h * f);
     cv.toBlob((b) => { if (b) onConfirm(b); }, "image/webp", 0.9);
-  }, [img, pan, zoom, rot, filter, onConfirm]);
+  }, [img, pan, zoom, rot, filter, view, onConfirm]);
 
-  const base = baseSize(VIEW);
+  const base = baseSize(view);
 
   return (
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" onClick={onCancel}>
-      <div className="card-glow relative w-full max-w-md overflow-hidden p-5" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[60] flex justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm" onClick={onCancel}>
+      <div className="card-glow relative my-auto w-full max-w-md overflow-hidden p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-black">ویرایش عکس</h3>
           <button onClick={onCancel} className="btn-ghost h-8 w-8 justify-center rounded-full p-0"><X size={16} /></button>
@@ -92,7 +106,7 @@ export function ImageEditorModal({ file, shape = "circle", onConfirm, onCancel, 
         {/* Crop viewport */}
         <div
           className="relative mx-auto cursor-move touch-none overflow-hidden bg-[#0b0410]"
-          style={{ width: VIEW, height: VIEW, borderRadius: shape === "circle" ? "9999px" : "1.25rem" }}
+          style={{ width: view, height: view, borderRadius: shape === "circle" ? "9999px" : "1.25rem" }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
