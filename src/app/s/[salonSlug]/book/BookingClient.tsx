@@ -420,7 +420,7 @@ function AuthGate({ onAuthed }: { onAuthed: (phone: string) => void }) {
   }
 
   async function verifyCode() {
-    if (code.trim().length < 4) { toast.error("کد را کامل وارد کنید"); return; }
+    if (code.trim().length < 5) { toast.error("کد را کامل وارد کنید"); return; }
     setBusy(true);
     try {
       const r = await signIn("credentials", { phone: phone.trim(), otp: code.trim(), redirect: false });
@@ -508,7 +508,7 @@ function AuthGate({ onAuthed }: { onAuthed: (phone: string) => void }) {
             <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="input mt-1.5" dir="ltr" placeholder="••••••••" />
             <p className="mt-1.5 text-[11px] text-white/40">حساب دارید؟ رمزتان را وارد کنید. کاربر جدید؟ رمز دلخواه حداقل ۸ کاراکتر شامل حروف کوچک، بزرگ و عدد بسازید.</p>
           </div>
-          <button type="button" onClick={passwordAuth} disabled={busy || !phoneOk || password.length < 6} className="btn-rose w-full justify-center py-3 text-sm disabled:opacity-40">
+          <button type="button" onClick={passwordAuth} disabled={busy || !phoneOk || password.length < 8} className="btn-rose w-full justify-center py-3 text-sm disabled:opacity-40">
             {busy ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />} ورود / ثبت‌نام
           </button>
         </div>

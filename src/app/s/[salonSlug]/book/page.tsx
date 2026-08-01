@@ -18,8 +18,10 @@ export default async function BookingPage({
   searchParams: { line?: string; service?: string; provider?: string };
 }) {
   const session = await getServerSession(authOptions);
-  const salon = await prisma.salon.findUnique({
-    where: { slug: params.salonSlug, active: true },
+  // The path segment may be a slug OR a subdomain label (middleware rewrites
+  // `{sub}.domain` → `/s/{sub}`), so match either — same as the salon home page.
+  const salon = await prisma.salon.findFirst({
+    where: { active: true, OR: [{ slug: params.salonSlug }, { subdomain: params.salonSlug }] },
     include: {
       lines: { where: { active: true }, orderBy: { order: "asc" }, include: { services: { where: { active: true }, orderBy: { price: "asc" } } } },
       providers: {

@@ -16,7 +16,9 @@ export default async function ProviderProfilePage({
 }: {
   params: { salonSlug: string; providerSlug: string };
 }) {
-  const salon = await prisma.salon.findUnique({ where: { slug: params.salonSlug, active: true } });
+  const salon = await prisma.salon.findFirst({
+    where: { active: true, OR: [{ slug: params.salonSlug }, { subdomain: params.salonSlug }] },
+  });
   if (!salon) notFound();
 
   const provider = await prisma.provider.findUnique({
